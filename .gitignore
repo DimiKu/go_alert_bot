@@ -1,0 +1,4 @@
+./pgdata
+./pkg/mod
+./pkg/sumdb
+./.idea
