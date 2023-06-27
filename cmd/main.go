@@ -7,12 +7,9 @@ import (
 )
 
 func main() {
-	db := db_operations.NewDBManage("alertsbot")
-	// TODO чтобы пересоздавать базу. Уточнить, почему не отрабатывает defer
-	db.DropDatabase()
-
-	db.CreateDatabase()
-	db.CreateUserTable("users")
+	db := db_operations.NewDBAdminManage()
+	storage := db_operations.NewStorage(db.DBCreate("alertsbot"))
+	storage.CreateDatabase()
 
 	http.HandleFunc("/", h.CreateEventHandler)
 

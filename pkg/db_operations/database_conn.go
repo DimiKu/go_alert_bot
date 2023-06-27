@@ -14,76 +14,77 @@ const (
 	dbname   = "postgres"
 )
 
-type DBManage struct {
-	user     string
-	password string
-	address  string
-	port     int
-	db_name  string
+type DBAdminManage struct {
+	user       string
+	password   string
+	address    string
+	port       int
+	DBName     string
+	ConnString string
 }
 
-func NewDBManage(DBName string) *DBManage {
-	return &DBManage{
+func NewDBAdminManage() *DBAdminManage {
+	return &DBAdminManage{
 		user:     user,
 		password: password,
 		address:  host,
 		port:     port,
-		db_name:  DBName,
 	}
 }
 
-func (m *DBManage) connectionStringForCreate() string {
+// Drop database if there is to use every time new db
+
+func (a DBAdminManage) DBCreate(DBName string) string {
 	connString := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
 		host, port, user, password)
-	return connString
-}
-
-// TODO как сделать возможные параметры
-func (m *DBManage) connectionStringForWork() string {
-	connString := fmt.Sprintf("host=%s port=%d user=%s password=%s database=%s sslmode=disable",
-		host, port, user, password, m.db_name)
-	return connString
-}
-
-func (m *DBManage) CreateDatabase() sql.Result {
-	conn, err := sql.Open("postgres", m.connectionStringForCreate())
-	defer conn.Close()
-	//m.db_name = dbname
+	conn, err := sql.Open("postgres", connString)
+	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + a.DBName)
+	if err != nil {
+		fmt.Errorf("Failed to drop db")
+	}
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
-	result, err := conn.Exec(`CREATE DATABASE ` + m.db_name + ` ;`)
+	_, err = conn.Exec(`CREATE DATABASE ` + DBName + ` ;`)
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
+	a.ConnString = fmt.Sprintf("host=%s port=%d user=%s password=%s database=%s sslmode=disable",
+		host, port, user, password, a.DBName)
+	return a.ConnString
+}
+
+type Storage struct {
+	connString string
+	DBName     string
+}
+
+func NewStorage(connString string) *Storage {
+	return &Storage{
+		connString: connString,
+	}
+}
+
+func (s *Storage) CreateDatabase() sql.Result {
+	conn, err := sql.Open("postgres", s.connString)
+	if err != nil {
+		fmt.Errorf("failed to create db")
+	}
+	result, err := conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
+	if err != nil {
+		fmt.Errorf("failed to create db")
+	}
+	s.CreateUserTable()
 	return result
 }
 
-func (m *DBManage) CreateUserTable(tableName string) sql.Result {
-	conn, err := sql.Open("postgres", m.connectionStringForWork())
-	defer conn.Close()
-
-	if err != nil {
-		fmt.Errorf("Failed to create table %s", tableName)
-	}
-	// resp, err := conn.Exec(`CREATE TABLE "`+tableName+`%s`, fileds)
-	resp, err := conn.Exec(`CREATE TABLE "` + tableName + `" (id integer PRIMARY KEY, chat_id integer)`)
+func (s *Storage) CreateUserTable() sql.Result {
+	conn, err := sql.Open("postgres", s.connString)
+	resp, err := conn.Exec(`CREATE TABLE users (id integer PRIMARY KEY, chat_id integer)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
 
 	fmt.Printf("response %s", resp)
 	return resp
-}
-
-func (m *DBManage) DropDatabase() {
-	conn, err := sql.Open("postgres", m.connectionStringForCreate())
-	defer conn.Close()
-	if err != nil {
-		fmt.Errorf("Failed to drop db")
-	}
-	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + m.db_name)
-	if err != nil {
-		fmt.Errorf("Failed to drop db")
-	}
 }
