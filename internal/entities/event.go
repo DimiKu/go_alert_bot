@@ -1,5 +1,5 @@
 package entities
 
 type Event struct {
-	key string `json:"key"`
+	Key string `json:"key"`
 }
