@@ -8,10 +8,12 @@ import (
 
 func main() {
 	db := db_operations.NewDBAdminManage()
-	storage := db_operations.NewStorage(db.DBCreate("alertsbot"))
-	storage.CreateDatabase()
+	Storage := db_operations.NewStorage(db.DBCreate("alertsbot"))
+	Storage.CreateDatabase()
 
-	http.HandleFunc("/", h.CreateEventHandler)
+	http.HandleFunc("/event", h.CreateEventHandler)
+	// TODO пока не ясно как прокинуть подключение в хендлер
+	http.HandleFunc("/create_user", h.CreateUserHandler)
 
 	http.ListenAndServe(":8081", nil)
 }

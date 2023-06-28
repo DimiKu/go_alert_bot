@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+var UserCounter int
+
 func CreateEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Event accepted!"))
 
@@ -19,8 +21,4 @@ func CreateEventHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, " Event is %s", e.Key)
 	}
 
-}
-
-func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello, world"))
 }

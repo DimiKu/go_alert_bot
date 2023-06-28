@@ -11,7 +11,6 @@ const (
 	port     = 5432
 	user     = "postgres"
 	password = "postgres"
-	dbname   = "postgres"
 )
 
 type DBAdminManage struct {
@@ -55,22 +54,22 @@ func (a DBAdminManage) DBCreate(DBName string) string {
 }
 
 type Storage struct {
-	connString string
-	DBName     string
+	conn   *sql.DB
+	DBName string
 }
 
 func NewStorage(connString string) *Storage {
+	conn, err := sql.Open("postgres", connString)
+	if err != nil {
+		fmt.Errorf("Failed to craate connection to db")
+	}
 	return &Storage{
-		connString: connString,
+		conn: conn,
 	}
 }
 
 func (s *Storage) CreateDatabase() sql.Result {
-	conn, err := sql.Open("postgres", s.connString)
-	if err != nil {
-		fmt.Errorf("failed to create db")
-	}
-	result, err := conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
+	result, err := s.conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
@@ -79,12 +78,20 @@ func (s *Storage) CreateDatabase() sql.Result {
 }
 
 func (s *Storage) CreateUserTable() sql.Result {
-	conn, err := sql.Open("postgres", s.connString)
-	resp, err := conn.Exec(`CREATE TABLE users (id integer PRIMARY KEY, chat_id integer)`)
+	resp, err := s.conn.Exec(`CREATE TABLE users (id integer PRIMARY KEY, chat_id integer)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
 
 	fmt.Printf("response %s", resp)
+	return resp
+}
+
+func (s Storage) CreateNewUser(ChatId, UserId int) sql.Result {
+	q := `INSERT INTO users (chat_id, user_id) values ($1, $2)`
+	resp, err := s.conn.Exec(q, ChatId, UserId)
+	if err != nil {
+		fmt.Errorf("Failed add new user")
+	}
 	return resp
 }

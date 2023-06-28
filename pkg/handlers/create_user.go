@@ -1,22 +1,16 @@
-package entities
+package handlers
 
 import (
 	"encoding/json"
 	"fmt"
+	"go_alert_bot/internal/entities"
 	"net/http"
 )
 
-type User struct {
-	Id     int `db:"id"`
-	ChatId int `db:"chat"`
-}
-
-var UserCounter int
-
-func (u *User) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte("hello, world"))
-	var user User
+	var user entities.User
 	if r.Method == http.MethodPost {
 		UserCounter += 1
 		err := json.NewDecoder(r.Body).Decode(&user)
@@ -26,4 +20,5 @@ func (u *User) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		user.Id = UserCounter
 
 	}
+
 }
