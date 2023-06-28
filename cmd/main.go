@@ -13,7 +13,7 @@ func main() {
 
 	http.HandleFunc("/event", h.CreateEventHandler)
 	// TODO пока не ясно как прокинуть подключение в хендлер
-	http.HandleFunc("/create_user", h.CreateUserHandler)
+	http.HandleFunc("/create_user", h.NewHandleFunc(Storage))
 
 	http.ListenAndServe(":8081", nil)
 }

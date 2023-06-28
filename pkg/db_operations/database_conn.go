@@ -8,7 +8,7 @@ import (
 
 const (
 	host     = "localhost"
-	port     = 5432
+	port     = 5434
 	user     = "postgres"
 	password = "postgres"
 )
@@ -37,19 +37,22 @@ func (a DBAdminManage) DBCreate(DBName string) string {
 	connString := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
 		host, port, user, password)
 	conn, err := sql.Open("postgres", connString)
-	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + a.DBName)
+
+	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + DBName)
 	if err != nil {
 		fmt.Errorf("Failed to drop db")
 	}
-	if err != nil {
-		fmt.Errorf("failed to create db")
-	}
+
 	_, err = conn.Exec(`CREATE DATABASE ` + DBName + ` ;`)
+	fmt.Print(DBName)
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
+
 	a.ConnString = fmt.Sprintf("host=%s port=%d user=%s password=%s database=%s sslmode=disable",
-		host, port, user, password, a.DBName)
+		host, port, user, password, DBName)
+
+	fmt.Println(a.ConnString)
 	return a.ConnString
 }
 
@@ -93,5 +96,6 @@ func (s Storage) CreateNewUser(ChatId, UserId int) sql.Result {
 	if err != nil {
 		fmt.Errorf("Failed add new user")
 	}
+	fmt.Print(resp)
 	return resp
 }
