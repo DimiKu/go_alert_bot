@@ -1,6 +1,11 @@
 package entities
 
 type User struct {
-	id     int `db:"id"`
-	chatId int `db:"chat"`
+	Id     int `json:"id"`
+	ChatId int `json:"chat_id"`
+}
+
+func (u *User) NewUser(id, ChatId int) User {
+	return User{id, ChatId}
+
 }

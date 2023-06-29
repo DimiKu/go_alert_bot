@@ -8,10 +8,9 @@ import (
 
 const (
 	host     = "localhost"
-	port     = 5432
+	port     = 5434
 	user     = "postgres"
 	password = "postgres"
-	dbname   = "postgres"
 )
 
 type DBAdminManage struct {
@@ -38,39 +37,42 @@ func (a DBAdminManage) DBCreate(DBName string) string {
 	connString := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
 		host, port, user, password)
 	conn, err := sql.Open("postgres", connString)
-	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + a.DBName)
+
+	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + DBName)
 	if err != nil {
 		fmt.Errorf("Failed to drop db")
 	}
-	if err != nil {
-		fmt.Errorf("failed to create db")
-	}
+
 	_, err = conn.Exec(`CREATE DATABASE ` + DBName + ` ;`)
+	fmt.Print(DBName)
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
+
 	a.ConnString = fmt.Sprintf("host=%s port=%d user=%s password=%s database=%s sslmode=disable",
-		host, port, user, password, a.DBName)
+		host, port, user, password, DBName)
+
+	fmt.Println(a.ConnString)
 	return a.ConnString
 }
 
 type Storage struct {
-	connString string
-	DBName     string
+	conn   *sql.DB
+	DBName string
 }
 
 func NewStorage(connString string) *Storage {
+	conn, err := sql.Open("postgres", connString)
+	if err != nil {
+		fmt.Errorf("Failed to craate connection to db")
+	}
 	return &Storage{
-		connString: connString,
+		conn: conn,
 	}
 }
 
 func (s *Storage) CreateDatabase() sql.Result {
-	conn, err := sql.Open("postgres", s.connString)
-	if err != nil {
-		fmt.Errorf("failed to create db")
-	}
-	result, err := conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
+	result, err := s.conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
@@ -79,12 +81,20 @@ func (s *Storage) CreateDatabase() sql.Result {
 }
 
 func (s *Storage) CreateUserTable() sql.Result {
-	conn, err := sql.Open("postgres", s.connString)
-	resp, err := conn.Exec(`CREATE TABLE users (id integer PRIMARY KEY, chat_id integer)`)
+	resp, err := s.conn.Exec(`CREATE TABLE users (id integer PRIMARY KEY, chat_id integer)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
 
-	fmt.Printf("response %s", resp)
+	return resp
+}
+
+func (s Storage) CreateNewUser(UserId, ChatId int) sql.Result {
+	fmt.Println("Creating user")
+	q := `INSERT INTO users (id, chat_id) values ($1, $2)`
+	resp, err := s.conn.Exec(q, UserId, ChatId)
+	if err != nil {
+		fmt.Errorf("Failed add new user")
+	}
 	return resp
 }
