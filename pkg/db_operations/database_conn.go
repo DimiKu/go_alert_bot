@@ -86,16 +86,15 @@ func (s *Storage) CreateUserTable() sql.Result {
 		fmt.Print("Error create table %s", err)
 	}
 
-	fmt.Printf("response %s", resp)
 	return resp
 }
 
-func (s Storage) CreateNewUser(ChatId, UserId int) sql.Result {
-	q := `INSERT INTO users (chat_id, user_id) values ($1, $2)`
-	resp, err := s.conn.Exec(q, ChatId, UserId)
+func (s Storage) CreateNewUser(UserId, ChatId int) sql.Result {
+	fmt.Println("Creating user")
+	q := `INSERT INTO users (id, chat_id) values ($1, $2)`
+	resp, err := s.conn.Exec(q, UserId, ChatId)
 	if err != nil {
 		fmt.Errorf("Failed add new user")
 	}
-	fmt.Print(resp)
 	return resp
 }

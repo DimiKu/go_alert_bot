@@ -8,19 +8,22 @@ import (
 	"net/http"
 )
 
-func NewHandleFunc(storage *db_operations.Storage) func(http.ResponseWriter, *http.Request) {
+var user entities.User
+
+func NewUserHandleFunc(storage *db_operations.Storage) func(http.ResponseWriter, *http.Request) {
 	fmt.Println("Im here")
 	return func(w http.ResponseWriter, r *http.Request) {
-		var user entities.User
+
 		if r.Method == http.MethodPost {
 			UserCounter += 1
+
 			err := json.NewDecoder(r.Body).Decode(&user)
 			if err != nil {
-				fmt.Errorf("Failed to create user")
+				fmt.Errorf("Failed to decode")
 			}
-			user.Id = UserCounter
-			fmt.Printf("user is %s %s", user.Id, user.ChatId)
 
+			fmt.Println(storage)
+			user.Id = UserCounter
 			storage.CreateNewUser(user.Id, user.ChatId)
 		}
 	}

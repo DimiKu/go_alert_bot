@@ -12,8 +12,10 @@ func main() {
 	Storage.CreateDatabase()
 
 	http.HandleFunc("/event", h.CreateEventHandler)
-	// TODO пока не ясно как прокинуть подключение в хендлер
-	http.HandleFunc("/create_user", h.NewHandleFunc(Storage))
+
+	// TODO это нужно переделать
+	// TODO описать тут интерфейс
+	http.HandleFunc("/create_user", h.NewUserHandleFunc(Storage))
 
 	http.ListenAndServe(":8081", nil)
 }

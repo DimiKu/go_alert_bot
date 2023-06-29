@@ -1,31 +1,11 @@
 package entities
 
-import (
-	"encoding/json"
-	"fmt"
-	"go_alert_bot/pkg/db_operations"
-	"net/http"
-)
-
 type User struct {
-	Id     int `db:"id"`
-	ChatId int `db:"chat"`
+	Id     int `json:"id"`
+	ChatId int `json:"chat_id"`
 }
 
-var Conn *db_operations.Storage
-var UserCounter int
+func (u *User) NewUser(id, ChatId int) User {
+	return User{id, ChatId}
 
-func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-
-	w.Write([]byte("Creating user"))
-	var user User
-	if r.Method == http.MethodPost {
-		UserCounter += 1
-		err := json.NewDecoder(r.Body).Decode(&user)
-		if err != nil {
-			fmt.Errorf("Failed to create user")
-		}
-		user.Id = UserCounter
-		Conn.CreateNewUser(user.Id, user.ChatId)
-	}
 }
