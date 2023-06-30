@@ -15,7 +15,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Creating user"))
 	var user entities.User
 	if r.Method == http.MethodPost {
-		UserCount += 1
+		UserCount += 1 //TODO переписать на uuid
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
 			fmt.Errorf("Failed to create user")
