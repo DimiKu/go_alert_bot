@@ -3,6 +3,7 @@ package main
 import (
 	"go_alert_bot/pkg/db_operations"
 	h "go_alert_bot/pkg/handlers"
+	"go_alert_bot/pkg/service/chats"
 	"go_alert_bot/pkg/service/users"
 	"net/http"
 )
@@ -19,7 +20,9 @@ func main() {
 	// TODO это нужно переделать
 	// TODO описать тут интерфейс
 	http.HandleFunc("/create_user", h.NewUserHandleFunc(userService))
-	// TODO в
+
+	chatService := chats.NewChatService(storage)
+	http.HandleFunc("/create_chet", h.NewChatHandleFunc(chatService))
 
 	http.ListenAndServe(":8081", nil)
 }
