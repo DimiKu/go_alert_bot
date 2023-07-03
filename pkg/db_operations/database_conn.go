@@ -92,7 +92,7 @@ func (s *Storage) CreateUserTable() sql.Result {
 }
 
 func (s *Storage) CreateChannelTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id integer, channal_link integer)`)
+	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id integer, channel_link bigint)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
@@ -106,25 +106,5 @@ func (s *Storage) CreateChatTable() sql.Result {
 		fmt.Print("Error create table %s", err)
 	}
 
-	return resp
-}
-
-func (s Storage) CreateNewUser(UserId, ChatId int) sql.Result {
-	fmt.Println("Creating user")
-	q := `INSERT INTO users (id, chat_id) values ($1, $2)`
-	resp, err := s.conn.Exec(q, UserId, ChatId)
-	if err != nil {
-		fmt.Errorf("Failed add new user")
-	}
-	return resp
-}
-
-func (s Storage) CreateNewChat(UserId, ChatId int) sql.Result {
-	fmt.Println("Creating user")
-	q := `INSERT INTO chats (user_id, chat_id) values ($1, $2)`
-	resp, err := s.conn.Exec(q, UserId, ChatId)
-	if err != nil {
-		fmt.Errorf("Failed add new user")
-	}
 	return resp
 }

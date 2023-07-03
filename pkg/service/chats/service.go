@@ -2,8 +2,8 @@ package chats
 
 import (
 	"fmt"
+	"go_alert_bot/pkg"
 	"go_alert_bot/pkg/db_operations"
-	"go_alert_bot/pkg/handlers"
 )
 
 type ChatRepo interface {
@@ -18,7 +18,7 @@ func NewChatService(storage ChatRepo) *ChatService {
 	return &ChatService{storage: storage}
 }
 
-func (cs *ChatService) CreateChat(chat handlers.ChatDto) error {
+func (cs *ChatService) CreateChat(chat pkg.ChatDto) error {
 	chatDb := db_operations.ChatDb{UserId: chat.UserId, ChatId: chat.ChatId}
 	err := cs.storage.CreateChat(chatDb)
 	if err != nil {

@@ -1,6 +1,7 @@
 package db_operations
 
 import (
+	"database/sql"
 	"fmt"
 )
 
@@ -17,4 +18,15 @@ func (s *Storage) CreateUser(user UserDb) error {
 		fmt.Errorf("Failed add new user")
 	}
 	return nil
+}
+
+func (s *Storage) CheckUser(user UserDb) bool {
+	q := `SELECT id FROM users where id=$1`
+	row := s.conn.QueryRow(q, user.Id).Scan()
+	fmt.Printf("row is %s", row)
+	if row == sql.ErrNoRows {
+		return true
+	} else {
+		return false
+	}
 }
