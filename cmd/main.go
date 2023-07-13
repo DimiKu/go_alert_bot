@@ -3,6 +3,8 @@ package main
 import (
 	"go_alert_bot/pkg/db_operations"
 	h "go_alert_bot/pkg/handlers"
+	"go_alert_bot/pkg/service/channels"
+	"go_alert_bot/pkg/service/chats"
 	"go_alert_bot/pkg/service/users"
 	"net/http"
 )
@@ -14,12 +16,13 @@ func main() {
 	storage.CreateDatabase()
 
 	userService := users.NewUserService(storage)
-	http.HandleFunc("/event", h.CreateEventHandler)
+	chatService := chats.NewChatService(storage)
+	channelService := channels.NewChannelService(storage)
 
-	// TODO это нужно переделать
-	// TODO описать тут интерфейс
+	http.HandleFunc("/event", h.CreateEventHandler)
 	http.HandleFunc("/create_user", h.NewUserHandleFunc(userService))
-	// TODO в
+	http.HandleFunc("/create_chat", h.NewChatHandleFunc(chatService))
+	http.HandleFunc("/create_channel", h.NewChannelHandleFunc(channelService))
 
 	http.ListenAndServe(":8081", nil)
 }
