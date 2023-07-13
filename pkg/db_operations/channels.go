@@ -11,7 +11,7 @@ type ChannelDb struct {
 	ChannelLink int64 `db:"channel_id"`
 }
 
-func (s *Storage) CreateChannel(channel ChannelDb) error {
+func (s *Storage) CreateChannel(channel ChannelDb) (error, int64) {
 	fmt.Println("Create channel")
 	fmt.Printf("Channel for create %s", channel)
 	q := `INSERT INTO channels (user_id, chat_id, channel_link) values ($1, $2, $3)`
@@ -20,7 +20,7 @@ func (s *Storage) CreateChannel(channel ChannelDb) error {
 		fmt.Errorf("failed to create channel %w", err)
 	}
 
-	return nil
+	return nil, 0
 }
 
 func (s *Storage) CheckChannel(channel ChannelDb) bool {

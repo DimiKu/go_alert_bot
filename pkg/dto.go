@@ -12,6 +12,6 @@ type ChatDto struct {
 }
 
 type UserDto struct {
-	Id     int `json:"user_id"`
+	UserId int `json:"user_id"`
 	ChatId int `json:"chat_id"`
 }

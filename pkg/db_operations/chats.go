@@ -9,6 +9,7 @@ type ChatDb struct {
 
 func (s *Storage) CreateChat(chat ChatDb) error {
 	fmt.Println("Create chat")
+	// TODO  вот это стоит улучшить. Нужно иметь возможность указать много чатов для одного channel_link
 	q := `INSERT INTO chat (user_id, chat_id) values ($1, $2)`
 	_, err := s.conn.Exec(q, chat.UserId, chat.ChatId)
 	if err != nil {

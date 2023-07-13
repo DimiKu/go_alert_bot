@@ -5,27 +5,27 @@ import (
 	"fmt"
 	"go_alert_bot/pkg"
 	"go_alert_bot/pkg/service/channels"
-	"go_alert_bot/pkg/utils"
 	"net/http"
 )
 
 func NewChannelHandleFunc(service *channels.ChannelService) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		var channel pkg.ChannelDto
 
 		if r.Method == http.MethodPost {
-			var channel pkg.ChannelDto
-
-			err := json.NewDecoder(r.Body).Decode(&channel)
+			decoder := json.NewDecoder(r.Body)
+			err := decoder.Decode(&channel)
 			if err != nil {
-				fmt.Errorf("Failed to decode")
+				fmt.Fprintf(w, "err %s", err)
 			}
-			if service.CheckChannel(channel) {
-				channel.ChannelLink = utils.LinkGenerate()
-				service.CreateChannel(channel)
-				fmt.Fprintf(w, "Your channel link is %d", channel.ChannelLink)
+			err, channelLink := service.CreateChannel(channel)
+			if err != nil {
+				fmt.Fprintf(w, "err %s", err)
 			} else {
-				fmt.Fprintf(w, "Channel already exist")
+				fmt.Fprintf(w, "your chanellink is %d", channelLink)
 			}
 		}
+
 	}
 }

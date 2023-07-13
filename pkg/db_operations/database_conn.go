@@ -83,7 +83,7 @@ func (s *Storage) CreateDatabase() sql.Result {
 }
 
 func (s *Storage) CreateUserTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE users (id integer PRIMARY KEY, chat_id integer)`)
+	resp, err := s.conn.Exec(`CREATE TABLE users (user_id integer PRIMARY KEY, chat_id integer)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}

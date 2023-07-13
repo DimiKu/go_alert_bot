@@ -18,11 +18,12 @@ func NewUserHandleFunc(service *users.UserService) func(http.ResponseWriter, *ht
 			if err != nil {
 				fmt.Errorf("Failed to decode")
 			}
-			if service.CheckUser(user) {
-				service.CreateUser(user)
-				fmt.Fprintf(w, "User_id is %d", user.Id)
+
+			err, userId := service.CreateUser(user)
+			if err != nil {
+				fmt.Fprintf(w, "error: %w", err)
 			} else {
-				fmt.Fprintf(w, "User with %d is already exists", user.Id)
+				fmt.Fprintf(w, "your user_id is : %d", userId)
 			}
 		}
 	}
