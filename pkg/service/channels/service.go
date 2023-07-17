@@ -21,7 +21,7 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 	return &ChannelService{storage: storage}
 }
 
-// TODO должно ли это быть в pkg
+// TODO должны ли сервисы быть в pkg
 func (chs *ChannelService) CreateChannel(channel pkg.ChannelDto) (error, int64) {
 
 	if chs.CheckChannel(channel) {

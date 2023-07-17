@@ -15,3 +15,7 @@ type UserDto struct {
 	UserId int `json:"user_id"`
 	ChatId int `json:"chat_id"`
 }
+
+type EventDto struct {
+	Key string `json:"key"`
+}

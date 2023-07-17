@@ -6,6 +6,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// TODO не забыть потом изменть. Плохая практирка
 const (
 	host     = "localhost"
 	port     = 5434
