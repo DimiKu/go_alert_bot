@@ -17,9 +17,11 @@ type EventRepo interface {
 	GetChatsFromChannelLink(link entities.ChannelLink) int64
 }
 
-var EventMap = make(map[entities.ChannelLink]EventChan, 10) // TODO мапы перенести в поля
-var EventMapCounter = make(map[Event]int, 10)               // TODO посмотреть sync.map, либо посмотреть использование мапы в горутинах конкурент ацес го
-var TgClient = pkg.New(entities.TgToken)                    // TODO инициализировать в мейне, добавить как поле структуры типа
+type SendEventRepo interface {
+	SendEvent(event Event, chatID int64, counter int)
+}
+
+//var TgClient = pkg.New(main.TgToken) // TODO инициализировать в мейне, добавить как поле структуры типа
 
 type Event struct {
 	Key    string `json:"key"`
@@ -31,14 +33,15 @@ type EventService struct {
 	storage         EventRepo
 	eventMap        *EventChanStorage
 	eventCounterMap *EventCounters
+	SendEventRepo   SendEventRepo
 }
 
 type EventChan chan Event
 
-func NewEventService(storage EventRepo) *EventService {
+func NewEventService(storage EventRepo, client SendEventRepo) *EventService {
 	eventMap := NewEventChanStorage()
 	eventCounter := NewEventCounters()
-	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter}
+	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepo: client}
 
 }
 
@@ -93,7 +96,7 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) {
 	}
 }
 
-func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Client) error {
+func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 	//ticker := time.NewTicker(10 * time.Second)
 	timer := time.NewTimer(10 * time.Second)
 	for {
@@ -103,7 +106,8 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Cli
 		case <-timer.C:
 			for event := range es.eventCounterMap.GetMap() {
 				eventCount, _ := es.eventCounterMap.Load(event)
-				es.SendEvent(event, eventCount, event.link, client)
+				chatID := es.storage.GetChatsFromChannelLink(event.link)
+				es.SendEventRepo.SendEvent(event, chatID, eventCount)
 				es.eventCounterMap.DeleteKey(event)
 
 			}
@@ -124,7 +128,7 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 			es.CheckEventsInChan(ctx)
 
 			ticker.Reset(5 * time.Second)
-			go es.SendMessagesFromMap(ctx, TgClient)
+			go es.SendMessagesFromMap(ctx)
 		}
 
 	}
