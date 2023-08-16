@@ -3,13 +3,14 @@ package events
 import (
 	"context"
 	"fmt"
-	"go_alert_bot/internal"
-	"go_alert_bot/internal/entities"
-	"go_alert_bot/pkg"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"go_alert_bot/internal"
+	"go_alert_bot/internal/entities"
+	"go_alert_bot/pkg"
 )
 
 type EventRepo interface {
@@ -27,13 +28,17 @@ type Event struct {
 }
 
 type EventService struct {
-	storage EventRepo
+	storage         EventRepo
+	eventMap        *EventChanStorage
+	eventCounterMap *EventCounters
 }
 
 type EventChan chan Event
 
 func NewEventService(storage EventRepo) *EventService {
-	return &EventService{storage: storage}
+	eventMap := NewEventChanStorage()
+	eventCounter := NewEventCounters()
+	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter}
 
 }
 
@@ -49,11 +54,11 @@ func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDt
 	channelLinkToChannel = entities.ChannelLink(channelLinkDto)
 	eventToChannel = Event{Key: event.Key, UserId: event.UserId, link: channelLinkToChannel}
 
-	_, ok := EventMap[channelLinkToChannel]
+	eventChan, ok := es.eventMap.Load(channelLinkToChannel)
 	if !ok {
-		EventMap[channelLinkToChannel] = es.CreateNewChannel()
+		eventChan = es.eventMap.Store(channelLinkToChannel, es.CreateNewChannel())
 	}
-	EventMap[channelLinkToChannel] <- eventToChannel
+	eventChan <- eventToChannel
 
 	return "Event added"
 }
@@ -68,7 +73,7 @@ func (es *EventService) SendEvent(event Event, counter int, link entities.Channe
 
 func (es *EventService) CheckEventsInChan(ctx context.Context) {
 
-	for link, channel := range EventMap {
+	for link, channel := range es.eventMap.GetMap() {
 		fmt.Println(link, channel)
 		for {
 			select {
@@ -76,11 +81,11 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) {
 				fmt.Println("Service is stopped")
 				break
 			case eventFromChannel := <-channel:
-				_, ok := EventMapCounter[eventFromChannel]
+				eventCount, ok := es.eventCounterMap.Load(eventFromChannel)
 				if !ok {
-					EventMapCounter[eventFromChannel] = 0
+					es.eventCounterMap.Store(eventFromChannel, 0)
 				}
-				EventMapCounter[eventFromChannel] += 1
+				es.eventCounterMap.Store(eventFromChannel, eventCount+1)
 
 			}
 		}
@@ -88,7 +93,7 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) {
 	}
 }
 
-func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Client, wg *sync.WaitGroup) error {
+func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Client) error {
 	//ticker := time.NewTicker(10 * time.Second)
 	timer := time.NewTimer(10 * time.Second)
 	for {
@@ -96,12 +101,12 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Cli
 		case <-ctx.Done():
 			return nil
 		case <-timer.C:
-			for event := range EventMapCounter {
-				es.SendEvent(event, EventMapCounter[event], event.link, client)
-				delete(EventMapCounter, event)
+			for event := range es.eventCounterMap.GetMap() {
+				eventCount, _ := es.eventCounterMap.Load(event)
+				es.SendEvent(event, eventCount, event.link, client)
+				es.eventCounterMap.DeleteKey(event)
 
 			}
-			//ticker.Reset(10 * time.Second)
 			return nil
 		}
 
@@ -115,11 +120,11 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C: // TODO вызывать функцию с логикой тикера
+		case <-ticker.C:
 			es.CheckEventsInChan(ctx)
 
 			ticker.Reset(5 * time.Second)
-			go es.SendMessagesFromMap(ctx, TgClient, wg)
+			go es.SendMessagesFromMap(ctx, TgClient)
 		}
 
 	}

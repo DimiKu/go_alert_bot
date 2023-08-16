@@ -3,13 +3,14 @@ package db_operations
 import (
 	"database/sql"
 	"fmt"
+
 	_ "github.com/lib/pq"
 )
 
 // TODO не забыть потом изменть. Плохая практирка
 const (
 	host     = "localhost"
-	port     = 5434
+	port     = 5436
 	user     = "postgres"
 	password = "postgres"
 )
