@@ -2,8 +2,9 @@ package db_operations
 
 import (
 	"fmt"
+
 	"go_alert_bot/internal"
-	"go_alert_bot/internal/utils"
+	"go_alert_bot/pkg/link_gen"
 )
 
 type ChannelDb struct {
@@ -12,7 +13,7 @@ type ChannelDb struct {
 	ChannelLink internal.ChannelLinkDto `db:"channel_link"`
 }
 
-func (s *Storage) CreateChannel(channel ChannelDb) (utils.ChannelLink, error) {
+func (s *Storage) CreateChannel(channel ChannelDb) (link_gen.ChannelLink, error) {
 	q := `INSERT INTO channels (user_id, chat_id, channel_link) values ($1, $2, $3)`
 	_, err := s.conn.Exec(q, channel.UserId, channel.ChatId, channel.ChannelLink)
 	if err != nil {

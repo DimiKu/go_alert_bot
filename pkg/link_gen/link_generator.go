@@ -1,4 +1,4 @@
-package utils
+package link_gen
 
 import (
 	"math/rand"

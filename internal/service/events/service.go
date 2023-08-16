@@ -13,16 +13,16 @@ import (
 )
 
 type EventRepo interface {
-	GetChatsFromChannelLink(link entities.ChannelLink) int64 // TODO какой тип нужно. Подойдет ли из энтитис
+	GetChatsFromChannelLink(link entities.ChannelLink) int64
 }
 
-var EventMap = make(map[entities.ChannelLink]EventChan, 10)
-var EventMapCounter = make(map[Event]int, 10)
-var TgClient = pkg.New(entities.TgToken)
+var EventMap = make(map[entities.ChannelLink]EventChan, 10) // TODO мапы перенести в поля
+var EventMapCounter = make(map[Event]int, 10)               // TODO посмотреть sync.map, либо посмотреть использование мапы в горутинах конкурент ацес го
+var TgClient = pkg.New(entities.TgToken)                    // TODO инициализировать в мейне, добавить как поле структуры типа
 
 type Event struct {
 	Key    string `json:"key"`
-	UserId int    `json:"user_id"` // TODO userId приходит 0. Нужно разобраться
+	UserId int    `json:"user_id"`
 	link   entities.ChannelLink
 }
 
@@ -76,7 +76,6 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) {
 				fmt.Println("Service is stopped")
 				break
 			case eventFromChannel := <-channel:
-				fmt.Println(eventFromChannel)
 				_, ok := EventMapCounter[eventFromChannel]
 				if !ok {
 					EventMapCounter[eventFromChannel] = 0
@@ -90,27 +89,26 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) {
 }
 
 func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Client, wg *sync.WaitGroup) error {
-	defer wg.Done()
-	ticker := time.NewTicker(10 * time.Second)
+	//ticker := time.NewTicker(10 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
+		case <-timer.C:
 			for event := range EventMapCounter {
 				es.SendEvent(event, EventMapCounter[event], event.link, client)
 				delete(EventMapCounter, event)
-				ticker.Reset(10 * time.Second)
-				if len(EventMapCounter) == 0 {
-					break
-				}
+
 			}
+			//ticker.Reset(10 * time.Second)
+			return nil
 		}
+
 	}
 }
 
 func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitGroup) error {
-	defer wg.Done()
 	ticker := time.NewTicker(5 * time.Second)
 
 	for {
@@ -119,7 +117,7 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 			return nil
 		case <-ticker.C: // TODO вызывать функцию с логикой тикера
 			es.CheckEventsInChan(ctx)
-			//es.CycleForChannel(eventChan) // TODO добавить в поле эвента
+
 			ticker.Reset(5 * time.Second)
 			go es.SendMessagesFromMap(ctx, TgClient, wg)
 		}

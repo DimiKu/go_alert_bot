@@ -3,13 +3,14 @@ package channels
 import (
 	"errors"
 	"fmt"
+
 	"go_alert_bot/internal"
 	"go_alert_bot/internal/db_operations"
-	"go_alert_bot/internal/utils"
+	"go_alert_bot/pkg/link_gen"
 )
 
 type ChannelRepo interface {
-	CreateChannel(channel db_operations.ChannelDb) (utils.ChannelLink, error)
+	CreateChannel(channel db_operations.ChannelDb) (link_gen.ChannelLink, error)
 	IsExistChannel(channel db_operations.ChannelDb) bool
 }
 
@@ -21,8 +22,8 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 	return &ChannelService{storage: storage}
 }
 
-func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (utils.ChannelLink, error) {
-	channelLink := utils.LinkGenerate() // TODO лучше возвращать инт64 и перекладывать или сразу возвращать нужный тип? Кажется тут смешиваются слои
+func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (link_gen.ChannelLink, error) {
+	channelLink := link_gen.LinkGenerate()
 
 	link := internal.ChannelLinkDto(channelLink)
 
