@@ -10,8 +10,9 @@ type EventQueue struct {
 	UserID int
 }
 
+type ChannelLink int64
+
 func (ev EventQueue) NewEventQueue(UserId int) *EventQueue {
-	// TODO создаем ли тут объект
 	return &EventQueue{UserID: UserId}
 }
 
@@ -19,7 +20,3 @@ func AddNewEvent(queue EventQueue, event Event) EventQueue {
 	queue.Queue = append(queue.Queue, event)
 	return queue
 }
-
-//func CollectMessages(event *Event, UserId int, queue *EventQueue) EventQueue{
-//
-//}

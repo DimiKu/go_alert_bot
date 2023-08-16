@@ -13,3 +13,5 @@ services:
 volumes:
   db:
     driver: local
+
+#  нужно потом убрать пассворд. Лучше тянуть из энвов

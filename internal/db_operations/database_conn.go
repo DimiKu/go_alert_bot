@@ -6,6 +6,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// TODO не забыть потом изменть. Плохая практирка
 const (
 	host     = "localhost"
 	port     = 5434
@@ -92,7 +93,7 @@ func (s *Storage) CreateUserTable() sql.Result {
 }
 
 func (s *Storage) CreateChannelTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id integer, channel_link bigint)`)
+	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id bigint, channel_link bigint)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
