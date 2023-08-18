@@ -4,6 +4,7 @@ type ChannelDto struct {
 	UserId      int   `json:"user_id"`
 	ChatId      int64 `json:"chat_id"`
 	ChannelLink ChannelLinkDto
+	ChatType    string `json:"channel_type"`
 }
 
 type ChatDto struct {

@@ -25,12 +25,13 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
-	tgClient := clients.NewTelegramClient(TgToken)
+	//tgClient := clients.NewTelegramClient(TgToken)
+	StdoutClient := clients.NewStdoutClient()
 
 	userService := users.NewUserService(storage)
 	chatService := chats.NewChatService(storage)
 	channelService := channels.NewChannelService(storage)
-	eventService := events.NewEventService(storage, tgClient)
+	eventService := events.NewEventService(storage, StdoutClient)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/event/{channelLink}", handlers.CreateEventInChannelHandler(eventService))

@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,15 +14,16 @@ import (
 	"go_alert_bot/pkg"
 )
 
+var ErrChannelNotFound = errors.New("channel not exist")
+
 type EventRepo interface {
 	GetChatsFromChannelLink(link entities.ChannelLink) int64
+	IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
 }
 
 type SendEventRepo interface {
 	SendEvent(event Event, chatID int64, counter int)
 }
-
-//var TgClient = pkg.New(main.TgToken) // TODO инициализировать в мейне, добавить как поле структуры типа
 
 type Event struct {
 	Key    string `json:"key"`
@@ -50,10 +52,12 @@ func (es *EventService) CreateNewChannel() EventChan {
 	return eventChannel
 }
 
-func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDto internal.ChannelLinkDto) string {
+func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDto internal.ChannelLinkDto) (string, error) {
 	var channelLinkToChannel entities.ChannelLink
 	var eventToChannel Event
-
+	if !es.storage.IsExistChannelByChannelLink(channelLinkDto) {
+		return "", ErrChannelNotFound
+	}
 	channelLinkToChannel = entities.ChannelLink(channelLinkDto)
 	eventToChannel = Event{Key: event.Key, UserId: event.UserId, link: channelLinkToChannel}
 
@@ -63,10 +67,10 @@ func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDt
 	}
 	eventChan <- eventToChannel
 
-	return "Event added"
+	return "Event added", nil
 }
 
-func (es *EventService) SendEvent(event Event, counter int, link entities.ChannelLink, client *pkg.Client) {
+func (es *EventService) SendEvent(event Event, counter int, link entities.ChannelLink, client *pkg.TelegramClient) {
 	// fmt.Printf("\nEvent  %s was %d times sended to link %s", event.Key, counter, link)
 	chatId := es.storage.GetChatsFromChannelLink(link)
 	counterStr := strconv.Itoa(counter)

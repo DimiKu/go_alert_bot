@@ -94,7 +94,7 @@ func (s *Storage) CreateUserTable() sql.Result {
 }
 
 func (s *Storage) CreateChannelTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id bigint, channel_link bigint)`)
+	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id bigint, channel_type varchar, channel_link bigint)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}

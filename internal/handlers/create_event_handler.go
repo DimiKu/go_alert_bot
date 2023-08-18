@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,7 +17,7 @@ var UserCounter int
 
 func CreateEventInChannelHandler(service *events.EventService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Event accepted!"))
+		//w.Write([]byte("Event accepted!"))
 		vars := mux.Vars(r)
 		ChannelLink := vars["channelLink"] // TODO добавить проверку на существование линка в бд
 		cnannelLinkInInt, err := strconv.ParseInt(ChannelLink, 10, 64)
@@ -31,11 +32,18 @@ func CreateEventInChannelHandler(service *events.EventService) func(w http.Respo
 				fmt.Errorf("%w", err)
 			}
 
-			service.AddEventInChannel(event, ChannelLinkDto)
+			res, err := service.AddEventInChannel(event, ChannelLinkDto)
+			if errors.Is(err, events.ErrChannelNotFound) {
+				fmt.Fprintf(w, "Channel not exist")
+			}
 			if err != nil {
 				fmt.Errorf("Failed to decode")
+				return
 			}
-			fmt.Fprintf(w, " Event is %s", event.Key)
+			if res != "" {
+				fmt.Fprintf(w, "Event is %s", event.Key)
+			}
+
 		}
 	}
 }

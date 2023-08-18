@@ -10,7 +10,7 @@ import (
 
 type TelegramClient struct {
 	token    string
-	tgClient *pkg.Client
+	tgClient *pkg.TelegramClient
 }
 
 func NewTelegramClient(token string) *TelegramClient {
