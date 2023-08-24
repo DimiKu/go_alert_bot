@@ -30,7 +30,6 @@ func (c *EventCounters) Store(key Event, value int) {
 	c.m[key] = value
 }
 
-// TODO можно ли возврашать ошибку?
 func (c *EventCounters) DeleteKey(key Event) {
 	c.mx.Lock()
 	defer c.mx.Unlock()

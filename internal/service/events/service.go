@@ -78,7 +78,7 @@ func (es *EventService) SendEvent(event Event, counter int, link entities.Channe
 	client.SendMessage(msg, chatId)
 }
 
-func (es *EventService) CheckEventsInChan(ctx context.Context) {
+func (es *EventService) CheckEventsInChan(ctx context.Context) error {
 
 	for link, channel := range es.eventMap.GetMap() {
 		fmt.Println(link, channel)
@@ -86,18 +86,17 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				fmt.Println("Service is stopped")
-				break
+				return nil
 			case eventFromChannel := <-channel:
 				eventCount, ok := es.eventCounterMap.Load(eventFromChannel)
 				if !ok {
 					es.eventCounterMap.Store(eventFromChannel, 0)
 				}
 				es.eventCounterMap.Store(eventFromChannel, eventCount+1)
-
 			}
 		}
-
 	}
+	return nil
 }
 
 func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
@@ -129,8 +128,10 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			es.CheckEventsInChan(ctx)
-
+			if err := es.CheckEventsInChan(ctx); err != nil {
+				return err
+			}
+			// TODO подумать чтобы отправлялось после ctx.Done
 			ticker.Reset(5 * time.Second)
 			go es.SendMessagesFromMap(ctx)
 		}

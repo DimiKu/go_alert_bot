@@ -14,7 +14,7 @@ type ChannelDb struct {
 }
 
 func (s *Storage) CreateTelegramChannel(channel ChannelDb) error {
-	q := `INSERT INTO channels (user_id, chat_id, chat_type, channel_link) values ($1, $2, $3)`
+	q := `INSERT INTO channels (user_id, chat_id, channel_type, channel_link) values ($1, $2, $3)`
 	_, err := s.conn.Exec(q, channel.UserId, channel.ChatId, channel.ChannelLink)
 	if err != nil {
 		fmt.Errorf("failed to create channel %w", err)

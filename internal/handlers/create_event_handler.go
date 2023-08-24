@@ -19,7 +19,7 @@ func CreateEventInChannelHandler(service *events.EventService) func(w http.Respo
 	return func(w http.ResponseWriter, r *http.Request) {
 		//w.Write([]byte("Event accepted!"))
 		vars := mux.Vars(r)
-		ChannelLink := vars["channelLink"] // TODO добавить проверку на существование линка в бд
+		ChannelLink := vars["channelLink"]
 		cnannelLinkInInt, err := strconv.ParseInt(ChannelLink, 10, 64)
 		if err != nil {
 			fmt.Errorf("Failed to parse channel link")

@@ -41,12 +41,13 @@ func main() {
 
 	go func() {
 		err := eventService.RunCheckEventChannel(ctx, wg)
-		cancel()
 		if err != nil {
 			fmt.Printf("error %w", err)
 		}
 	}()
-
-	http.ListenAndServe(":8081", router)
-
+	// TODO обработка сигналов
+	if err := http.ListenAndServe(":8081", router); err != nil {
+		fmt.Errorf("error is, %w", err)
+		cancel()
+	}
 }

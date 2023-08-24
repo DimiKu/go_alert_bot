@@ -26,9 +26,7 @@ func (s *Storage) CheckIfExistUser(user UserDb) bool {
 	userExist := true
 	q := `SELECT user_id FROM users where user_id=$1`
 	row := s.conn.QueryRow(q, user.UserID).Scan(&checkUser)
-	// TODO посмотреть можно ли иначе
 	if errors.Is(row, sql.ErrNoRows) {
-		// TODO лучше ли так?
 		userExist = false
 	}
 	return userExist
