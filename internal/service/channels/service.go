@@ -27,29 +27,36 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (link_gen.ChannelLink, error) {
 	channelLink := link_gen.LinkGenerate()
 
-	link := internal.ChannelLinkDto(channelLink)
-		channelDb := db_operations.ChannelDb{UserId: channel.UserId, ChatId: channel.ChatId, ChannelLink: link, ChannelType: channel.ChatType}
-		if !chs.storage.IsExistChannel(channelDb) {
-			switch channelDb.ChannelType {
-			case entities.TelegramChatType:
-				err := chs.storage.CreateTelegramChannel(channelDb)
-				if err != nil {
-					return 0, fmt.Errorf("failed to create channel")
-				}
-			case entities.StdoutChatType:
-				err := chs.storage.CreateStdoutChannel(channelDb)
-				if err != nil {
-					return 0, fmt.Errorf("failed to create channel")
-				}
+	link := internal.ChannelLinkDto(link_gen.LinkGenerate())
 
+	channelDb := db_operations.ChannelDb{
+		UserId:       channel.UserId,
+		TgChatId:     channel.TgChatId,
+		ChannelLink:  db_operations.ChannelLink(link),
+		ChannelType:  channel.ChatType,
+		FormatString: channel.FormatString,
+	}
+
+	if !chs.storage.IsExistChannel(channelDb) {
+		switch channelDb.ChannelType {
+		case entities.TelegramChatType:
+			err := chs.storage.CreateTelegramChannel(channelDb)
+			if err != nil {
+				return 0, fmt.Errorf("failed to create channel")
+			}
+		case entities.StdoutChatType:
+			err := chs.storage.CreateStdoutChannel(channelDb)
+			if err != nil {
+				return 0, fmt.Errorf("failed to create channel")
 			}
 
-
-			return channelLink, nil
-
-		} else {
-			return 0, errors.New("channel already exist")
 		}
+
+		return channelLink, nil
+
+	} else {
+		return 0, errors.New("channel already exist")
+	}
 
 	return 0, nil
 }

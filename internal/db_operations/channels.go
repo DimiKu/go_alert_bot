@@ -3,32 +3,47 @@ package db_operations
 import (
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"go_alert_bot/internal"
 )
 
+type ChannelLink int64
+
 type ChannelDb struct {
-	UserId      int                     `db:"user_id"`
-	ChatId      int64                   `db:"chat_id"`
-	ChannelLink internal.ChannelLinkDto `db:"channel_link"`
-	ChannelType string                  `db:"channel_type"`
+	UserId       int         `db:"user_id"`
+	ChatUUID     uuid.UUID   `db:"chat_uuid"`
+	ChannelLink  ChannelLink `db:"channel_link"`
+	TgChatId     int64       `db:"telegram_chat_id"` // TODO потом можно поменять на массив
+	ChannelType  string      `db:"channel_type"`
+	FormatString string      `db:"format_string"`
 }
 
 func (s *Storage) CreateTelegramChannel(channel ChannelDb) error {
-	q := `INSERT INTO channels (user_id, chat_id, channel_type, channel_link) values ($1, $2, $3)`
-	_, err := s.conn.Exec(q, channel.UserId, channel.ChatId, channel.ChannelLink)
+	tgChat := TelegramChat{UserId: channel.UserId, TgChatId: channel.TgChatId, FormatString: channel.FormatString, ChannelLink: channel.ChannelLink}
+
+	chatUUID, err := s.CreateTelegramChatInDB(tgChat)
 	if err != nil {
-		fmt.Errorf("failed to create channel %w", err)
+		fmt.Errorf("failed to create telegram chat in db, %w", err)
+	}
+
+	if err = s.createTelegramChannelInDB(channel, chatUUID); err != nil {
+		fmt.Errorf("failed to create telegram channel in db, %w", err)
 	}
 
 	return nil
 }
 
-// TODO можно объеденить в одну с той что выше. Но как принимать форматирование
 func (s *Storage) CreateStdoutChannel(channel ChannelDb) error {
-	q := `INSERT INTO channels (user_id, chat_id, channel_type, channel_link) values ($1, $2, $3, $4)`
-	_, err := s.conn.Exec(q, channel.UserId, channel.ChatId, channel.ChannelType, channel.ChannelLink)
+	stdChat := StdoutChat{UserId: channel.UserId, FormatString: channel.FormatString}
+
+	chatUuid, err := s.CreateStdoutChatInDB(stdChat)
 	if err != nil {
-		fmt.Errorf("failed to create channel %w", err)
+		fmt.Errorf("failed to create stdout chat in db, %w", err)
+	}
+
+	if err := s.createStdoutChannelInDB(channel, chatUuid); err != nil {
+		fmt.Errorf("failed to create stdout chat in db, %w", err)
 	}
 
 	return nil
@@ -36,7 +51,7 @@ func (s *Storage) CreateStdoutChannel(channel ChannelDb) error {
 
 func (s *Storage) IsExistChannel(channel ChannelDb) bool {
 	var channelTest ChannelDb
-	q := `SELECT user_id, chat_id, channel_link FROM channels where channel_link=$1`
+	q := `SELECT user_id, chat_uuid, channel_link FROM channels where channel_link=$1`
 	row, _ := s.conn.Query(q, channel.ChannelLink)
 	row.Scan(&channelTest)
 	if channelTest.ChannelLink == 0 {
@@ -58,7 +73,7 @@ func (s *Storage) IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
 		fmt.Errorf("failed to select from channels, %w", err)
 	}
 	for row.Next() {
-		if err := row.Scan(&channelTest.UserId, &channelTest.ChatId, &channelTest.ChannelType, &channelTest.ChannelLink); err != nil {
+		if err := row.Scan(&channelTest.UserId, &channelTest.ChatUUID, &channelTest.ChannelType, &channelTest.ChannelLink); err != nil {
 			fmt.Errorf("failed to scan, %w", err)
 		}
 	}
@@ -70,4 +85,25 @@ func (s *Storage) IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
 	}
 
 	return true
+}
+
+// TODO потом можно объединить
+func (s *Storage) createTelegramChannelInDB(channel ChannelDb, chatUuid ChatUUID) error {
+	q := `INSERT INTO channels (user_id, chat_uuid, channel_type, channel_link) values ($1, $2, $3, $4)`
+	_, err := s.conn.Exec(q, channel.UserId, chatUuid, channel.ChannelType, channel.ChannelLink)
+	if err != nil {
+		fmt.Errorf("failed to create channel %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) createStdoutChannelInDB(channel ChannelDb, chatUuid ChatUUID) error {
+	q := `INSERT INTO channels (user_id, chat_uuid, channel_type, channel_link) values ($1, $2, $3, $4)`
+	_, err := s.conn.Exec(q, channel.UserId, chatUuid, channel.ChannelType, channel.ChannelLink)
+	if err != nil {
+		fmt.Errorf("failed to create channel %w", err)
+	}
+
+	return nil
 }

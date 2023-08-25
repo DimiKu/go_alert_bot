@@ -12,7 +12,7 @@ func (s *Storage) GetChatsFromChannelLink(link entities.ChannelLink) int64 {
 	//q := `INSERT INTO users (user_id, chat_id) values ($1, $2)`
 	q := `SELECT * FROM channels WHERE channel_link=$1`
 
-	channel := s.conn.QueryRow(q, link).Scan(&existChannel.UserId, &existChannel.ChatId, &existChannel.ChannelType, &existChannel.ChannelLink)
+	channel := s.conn.QueryRow(q, link).Scan(&existChannel.UserId, &existChannel.ChatUUID, &existChannel.ChannelType, &existChannel.ChannelLink)
 	fmt.Println(channel)
-	return existChannel.ChatId // TODO пока один
+	return existChannel.TgChatId // TODO пока один
 }

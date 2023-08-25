@@ -79,7 +79,8 @@ func (s *Storage) CreateDatabase() sql.Result {
 		fmt.Errorf("failed to create db")
 	}
 	s.CreateUserTable()
-	s.CreateChatTable()
+	s.CreateTelegramChatTable()
+	s.CreateStdoutChatTable()
 	s.CreateChannelTable()
 	return result
 }
@@ -94,7 +95,7 @@ func (s *Storage) CreateUserTable() sql.Result {
 }
 
 func (s *Storage) CreateChannelTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id bigint, channel_type varchar, channel_link bigint)`)
+	resp, err := s.conn.Exec(`CREATE TABLE channels (chat_uuid uuid PRIMARY KEY, user_id integer, channel_type varchar, channel_link bigint)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
@@ -102,8 +103,17 @@ func (s *Storage) CreateChannelTable() sql.Result {
 	return resp
 }
 
-func (s *Storage) CreateChatTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE chats (user_id integer PRIMARY KEY, chat_id integer)`)
+func (s *Storage) CreateTelegramChatTable() sql.Result {
+	resp, err := s.conn.Exec(`CREATE TABLE telegram_chats (channel_link bigint, chat_uuid uuid PRIMARY KEY, user_id integer, telegram_chat_id bigint, format_string varchar)`)
+	if err != nil {
+		fmt.Print("Error create table %s", err)
+	}
+
+	return resp
+}
+
+func (s *Storage) CreateStdoutChatTable() sql.Result {
+	resp, err := s.conn.Exec(`CREATE TABLE stdout_chats (chat_uuid uuid PRIMARY KEY, user_id integer, format_string varchar)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
