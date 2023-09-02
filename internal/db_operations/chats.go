@@ -41,15 +41,15 @@ func (s *Storage) CreateTelegramChatInDB(chat TelegramChat) (ChatUUID, error) {
 func (s *Storage) CreateStdoutChatInDB(chat StdoutChat) (ChatUUID, error) {
 	chat.ChatUUID = uuid.New()
 	// TODO то же что и выше
-	q := `INSERT INTO telegram_chats (user_id, chat_uuid, format_string) values ($1, $2)`
-	_, err := s.conn.Exec(q, chat.UserId, chat.ChatUUID, chat.FormatString)
+	q := `INSERT INTO stdout_chats (user_id, chat_uuid, format_string, channel_link) values ($1, $2, $3, $4)`
+	_, err := s.conn.Exec(q, chat.UserId, chat.ChatUUID, chat.FormatString, chat.ChannelLink)
 	if err != nil {
 		fmt.Errorf("failed to create chat, %w", err)
 	}
 
-	chatIdQuery := `SELECT chat_uuid FROM telegram_chats WHERE channel_link=$1`
+	chatUuidQuery := `SELECT chat_uuid FROM stdout_chats WHERE channel_link=$1`
 
-	row, err := s.conn.Query(chatIdQuery, chat.ChannelLink)
+	row, err := s.conn.Query(chatUuidQuery, chat.ChannelLink)
 	if err != nil {
 		fmt.Errorf("failed to get chatID after chat creating in DB, %w", err)
 	}

@@ -4,25 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"go_alert_bot/internal"
+	"go_alert_bot/internal/db_operations"
 	"go_alert_bot/internal/entities"
-	"go_alert_bot/pkg"
 )
 
 var ErrChannelNotFound = errors.New("channel not exist")
 
 type EventRepo interface {
-	GetChatsFromChannelLink(link entities.ChannelLink) int64
+	GetChannelFromChannelLink(link entities.ChannelLink) db_operations.ChannelDb
 	IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
 }
 
 type SendEventRepo interface {
-	SendEvent(event Event, chatID int64, counter int)
+	Send(event Event, channel db_operations.ChannelDb, counter int)
 }
 
 type Event struct {
@@ -35,15 +33,15 @@ type EventService struct {
 	storage         EventRepo
 	eventMap        *EventChanStorage
 	eventCounterMap *EventCounters
-	SendEventRepo   SendEventRepo
+	SendEventRepos  map[string]SendEventRepo
 }
 
 type EventChan chan Event
 
-func NewEventService(storage EventRepo, client SendEventRepo) *EventService {
+func NewEventService(storage EventRepo, clientsList map[string]SendEventRepo) *EventService {
 	eventMap := NewEventChanStorage()
 	eventCounter := NewEventCounters()
-	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepo: client}
+	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepos: clientsList}
 
 }
 
@@ -70,12 +68,16 @@ func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDt
 	return "Event added", nil
 }
 
-func (es *EventService) SendEvent(event Event, counter int, link entities.ChannelLink, client *pkg.TelegramClient) {
-	// fmt.Printf("\nEvent  %s was %d times sended to link %s", event.Key, counter, link)
-	chatId := es.storage.GetChatsFromChannelLink(link)
-	counterStr := strconv.Itoa(counter)
-	msg := strings.Join([]string{"Event", event.Key, " was ", counterStr, " times"}, " ")
-	client.SendMessage(msg, chatId)
+// TODO подумать над тем чтобы не зависеть от слоя контроллеров
+func (es *EventService) Send(event Event, channel db_operations.ChannelDb, counter int) {
+	switch channel.ChannelType {
+	case entities.TelegramChatType:
+		client := es.SendEventRepos[entities.TelegramChatType]
+		client.Send(event, channel, counter)
+	case entities.StdoutChatType:
+		client := es.SendEventRepos[entities.StdoutChatType]
+		client.Send(event, channel, counter)
+	}
 }
 
 func (es *EventService) CheckEventsInChan(ctx context.Context) error {
@@ -100,7 +102,6 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) error {
 }
 
 func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
-	//ticker := time.NewTicker(10 * time.Second)
 	timer := time.NewTimer(10 * time.Second)
 	for {
 		select {
@@ -109,14 +110,15 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 		case <-timer.C:
 			for event := range es.eventCounterMap.GetMap() {
 				eventCount, _ := es.eventCounterMap.Load(event)
-				chatID := es.storage.GetChatsFromChannelLink(event.link)
-				es.SendEventRepo.SendEvent(event, chatID, eventCount)
-				es.eventCounterMap.DeleteKey(event)
 
+				// TODO разбить логику функции
+				channel := es.storage.GetChannelFromChannelLink(event.link)
+				es.Send(event, channel, eventCount)
+				es.eventCounterMap.DeleteKey(event)
 			}
+
 			return nil
 		}
-
 	}
 }
 

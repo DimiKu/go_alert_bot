@@ -35,7 +35,7 @@ func (s *Storage) CreateTelegramChannel(channel ChannelDb) error {
 }
 
 func (s *Storage) CreateStdoutChannel(channel ChannelDb) error {
-	stdChat := StdoutChat{UserId: channel.UserId, FormatString: channel.FormatString}
+	stdChat := StdoutChat{UserId: channel.UserId, FormatString: channel.FormatString, ChannelLink: channel.ChannelLink}
 
 	chatUuid, err := s.CreateStdoutChatInDB(stdChat)
 	if err != nil {
@@ -67,7 +67,7 @@ func (s *Storage) IsExistChannel(channel ChannelDb) bool {
 func (s *Storage) IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool {
 	var channelTest ChannelDb
 
-	q := `SELECT user_id, chat_id, channel_type, channel_link FROM channels where channel_link=$1`
+	q := `SELECT user_id, chat_uuid, channel_type, channel_link FROM channels where channel_link=$1`
 	row, err := s.conn.Query(q, link)
 	if err != nil {
 		fmt.Errorf("failed to select from channels, %w", err)

@@ -24,8 +24,7 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 	return &ChannelService{storage: storage}
 }
 
-func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (link_gen.ChannelLink, error) {
-	channelLink := link_gen.LinkGenerate()
+func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.ChannelLinkDto, error) {
 
 	link := internal.ChannelLinkDto(link_gen.LinkGenerate())
 
@@ -52,7 +51,7 @@ func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (link_gen.
 
 		}
 
-		return channelLink, nil
+		return link, nil
 
 	} else {
 		return 0, errors.New("channel already exist")

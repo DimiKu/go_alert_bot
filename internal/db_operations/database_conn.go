@@ -113,7 +113,7 @@ func (s *Storage) CreateTelegramChatTable() sql.Result {
 }
 
 func (s *Storage) CreateStdoutChatTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE stdout_chats (chat_uuid uuid PRIMARY KEY, user_id integer, format_string varchar)`)
+	resp, err := s.conn.Exec(`CREATE TABLE stdout_chats (chat_uuid uuid PRIMARY KEY, user_id integer, format_string varchar, channel_link bigint)`)
 	if err != nil {
 		fmt.Print("Error create table %s", err)
 	}
