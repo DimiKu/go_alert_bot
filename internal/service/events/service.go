@@ -8,19 +8,21 @@ import (
 	"time"
 
 	"go_alert_bot/internal"
-	"go_alert_bot/internal/db_operations"
+	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
 )
 
 var ErrChannelNotFound = errors.New("channel not exist")
 
 type EventRepo interface {
-	GetChannelFromChannelLink(link entities.ChannelLink) db_operations.ChannelDb
+	GetChannelFromChannelLink(link entities.ChannelLink) *db_actions.ChannelDb
 	IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
+	GetTelegramChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
+	GetStdoutChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
 }
 
 type SendEventRepo interface {
-	Send(event Event, channel db_operations.ChannelDb, counter int)
+	Send(event Event, channel *db_actions.ChannelDb, counter int)
 }
 
 type Event struct {
@@ -68,16 +70,9 @@ func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDt
 	return "Event added", nil
 }
 
-// TODO подумать над тем чтобы не зависеть от слоя контроллеров
-func (es *EventService) Send(event Event, channel db_operations.ChannelDb, counter int) {
-	switch channel.ChannelType {
-	case entities.TelegramChatType:
-		client := es.SendEventRepos[entities.TelegramChatType]
-		client.Send(event, channel, counter)
-	case entities.StdoutChatType:
-		client := es.SendEventRepos[entities.StdoutChatType]
-		client.Send(event, channel, counter)
-	}
+func (es *EventService) Send(event Event, channel *db_actions.ChannelDb, counter int) {
+	client := es.SendEventRepos[channel.ChannelType]
+	client.Send(event, channel, counter)
 }
 
 func (es *EventService) CheckEventsInChan(ctx context.Context) error {
@@ -111,8 +106,23 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 			for event := range es.eventCounterMap.GetMap() {
 				eventCount, _ := es.eventCounterMap.Load(event)
 
-				// TODO разбить логику функции
 				channel := es.storage.GetChannelFromChannelLink(event.link)
+				var err error
+				if channel != nil {
+					switch channel.ChannelType {
+					case entities.TelegramChatType:
+						channel, err = es.storage.GetTelegramChannelByChannelLink(channel)
+						if err != nil {
+							return err
+						}
+					case entities.StdoutChatType:
+						channel, err = es.storage.GetStdoutChannelByChannelLink(channel)
+						if err != nil {
+							return err
+						}
+					}
+
+				}
 				es.Send(event, channel, eventCount)
 				es.eventCounterMap.DeleteKey(event)
 			}

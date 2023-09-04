@@ -3,17 +3,18 @@ package channels
 import (
 	"errors"
 	"fmt"
-
 	"go_alert_bot/internal"
-	"go_alert_bot/internal/db_operations"
+	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
 	"go_alert_bot/pkg/link_gen"
+	"strconv"
+	"strings"
 )
 
 type ChannelRepo interface {
-	CreateTelegramChannel(channel db_operations.ChannelDb) error
-	IsExistChannel(channel db_operations.ChannelDb) bool
-	CreateStdoutChannel(channel db_operations.ChannelDb) error
+	CreateTelegramChannel(channel db_actions.ChannelDb) error
+	IsExistChannel(channel db_actions.ChannelDb) bool
+	CreateStdoutChannel(channel db_actions.ChannelDb) error
 }
 
 type ChannelService struct {
@@ -25,13 +26,20 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 }
 
 func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.ChannelLinkDto, error) {
-
 	link := internal.ChannelLinkDto(link_gen.LinkGenerate())
 
-	channelDb := db_operations.ChannelDb{
+	trimmed := strings.Trim(channel.TgChatIds, "[]")
+	stringsSlice := strings.Split(trimmed, ", ")
+	tgIds := make([]int64, len(stringsSlice))
+
+	for i, s := range stringsSlice {
+		tgIds[i], _ = strconv.ParseInt(s, 10, 64)
+	}
+
+	channelDb := db_actions.ChannelDb{
 		UserId:       channel.UserId,
-		TgChatId:     channel.TgChatId,
-		ChannelLink:  db_operations.ChannelLink(link),
+		TgChatIds:    tgIds,
+		ChannelLink:  db_actions.ChannelLink(link),
 		ChannelType:  channel.ChatType,
 		FormatString: channel.FormatString,
 	}
@@ -48,14 +56,10 @@ func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.
 			if err != nil {
 				return 0, fmt.Errorf("failed to create channel")
 			}
-
 		}
-
 		return link, nil
 
 	} else {
 		return 0, errors.New("channel already exist")
 	}
-
-	return 0, nil
 }

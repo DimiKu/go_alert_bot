@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go_alert_bot/internal/db_operations"
+	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/service/events"
 	"go_alert_bot/pkg"
 )
@@ -24,13 +24,15 @@ func NewTelegramClient(token string) *TelegramClient {
 
 func (es *TelegramClient) Send(
 	event events.Event,
-	channel db_operations.ChannelDb,
+	channel *db_actions.ChannelDb,
 	counter int,
 ) {
 	// fmt.Printf("\nEvent  %s was %d times sended to link %s", event.Key, counter, link)
 	counterStr := strconv.Itoa(counter)
 	msg := strings.Join([]string{"Event", event.Key, " was ", counterStr, " times, ", channel.FormatString}, " ")
-	if err := es.tgClient.SendMessage(msg, channel.TgChatId); err != nil {
-		fmt.Errorf("failed to send telegram message, %w", err)
+	for _, chat := range channel.TgChatIds {
+		if err := es.tgClient.SendMessage(msg, chat); err != nil {
+			fmt.Errorf("failed to send telegram message, %w", err)
+		}
 	}
 }

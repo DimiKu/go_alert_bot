@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"go_alert_bot/internal/clients"
-	"go_alert_bot/internal/db_operations"
+	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/handlers"
 	"go_alert_bot/internal/service/channels"
 	"go_alert_bot/internal/service/chats"
@@ -18,10 +18,12 @@ import (
 )
 
 func main() {
-	db := db_operations.NewDBAdminManage()
+	db := db_actions.NewDBAdminManage()
 
-	storage := db_operations.NewStorage(db.DBCreate("alertsbot"))
-	storage.CreateDatabase()
+	storage := db_actions.NewStorage(db.DBCreate("alertsbot"))
+	if err := storage.CreateDatabase(); err != nil {
+		fmt.Errorf("failed to create db, %w", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
