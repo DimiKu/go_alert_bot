@@ -1,6 +1,7 @@
 package channels
 
 import (
+	"github.com/golang/mock/gomock"
 	"testing"
 
 	"go_alert_bot/internal"
@@ -13,6 +14,9 @@ func TestChannelService_CreateChannel(t *testing.T) {
 	type args struct {
 		channel internal.ChannelDto
 	}
+
+	newStorage := fields{storage: NewMockChannelRepo(gomock.NewController(t))}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -21,7 +25,13 @@ func TestChannelService_CreateChannel(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{
+			name:    "first test",
+			fields:  newStorage,
+			wantErr: false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			chs := &ChannelService{

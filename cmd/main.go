@@ -26,7 +26,9 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	wg := new(sync.WaitGroup)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	clientsList := map[string]events.SendEventRepo{
 		"telegram": clients.NewTelegramClient(TgToken),
@@ -45,7 +47,7 @@ func main() {
 	router.HandleFunc("/create_channel", handlers.NewChannelHandleFunc(channelService))
 
 	go func() {
-		err := eventService.RunCheckEventChannel(ctx, wg)
+		err := eventService.RunCheckEventChannel(ctx, &wg)
 		if err != nil {
 			fmt.Printf("error %w", err)
 		}

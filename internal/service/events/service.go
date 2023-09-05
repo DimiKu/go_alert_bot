@@ -96,8 +96,9 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) error {
 	return nil
 }
 
-func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
+func (es *EventService) SendMessagesFromMap(ctx context.Context, wg *sync.WaitGroup) error {
 	timer := time.NewTimer(10 * time.Second)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -107,7 +108,9 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 				eventCount, _ := es.eventCounterMap.Load(event)
 
 				channel := es.storage.GetChannelFromChannelLink(event.link)
+
 				var err error
+
 				if channel != nil {
 					switch channel.ChannelType {
 					case entities.TelegramChatType:
@@ -121,10 +124,10 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 							return err
 						}
 					}
-
 				}
 				es.Send(event, channel, eventCount)
 				es.eventCounterMap.DeleteKey(event)
+				wg.Done()
 			}
 
 			return nil
@@ -138,6 +141,7 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 	for {
 		select {
 		case <-ctx.Done():
+			// TODO не очень понятны вайтгруппы, как их засинкать
 			return nil
 		case <-ticker.C:
 			if err := es.CheckEventsInChan(ctx); err != nil {
@@ -145,9 +149,8 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 			}
 			// TODO подумать чтобы отправлялось после ctx.Done
 			ticker.Reset(5 * time.Second)
-			go es.SendMessagesFromMap(ctx)
+			go es.SendMessagesFromMap(ctx, wg)
+			// wg.Wait()
 		}
-
 	}
-
 }
