@@ -2,12 +2,17 @@ package chats
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"go_alert_bot/internal"
-	"go_alert_bot/internal/db_operations"
+	"go_alert_bot/internal/db_actions"
+	"go_alert_bot/internal/entities"
 )
 
 type ChatRepo interface {
-	CreateChat(chat db_operations.ChatDb) error
+	CreateTelegramChatInDB(chat db_actions.TelegramChat) (*db_actions.ChatUUID, error)
+	CreateStdoutChatInDB(chat db_actions.StdoutChat) (*db_actions.ChatUUID, error)
 }
 
 type ChatService struct {
@@ -19,10 +24,37 @@ func NewChatService(storage ChatRepo) *ChatService {
 }
 
 func (cs *ChatService) CreateChat(chat internal.ChatDto) error {
-	chatDb := db_operations.ChatDb{UserId: chat.UserId, ChatId: chat.ChatId}
-	err := cs.storage.CreateChat(chatDb)
-	if err != nil {
-		fmt.Errorf("failed to create chat %w", err)
+	switch chat.ChatType {
+	case entities.TelegramChatType:
+		trimmed := strings.Trim(chat.TgChatId, "[]")
+		stringsSlice := strings.Split(trimmed, ", ")
+		tgIds := make([]int64, len(stringsSlice))
+
+		for i, s := range stringsSlice {
+			tgIds[i], _ = strconv.ParseInt(s, 10, 64)
+		}
+
+		chatDb := db_actions.TelegramChat{
+			TgChatIds:    tgIds,
+			UserId:       chat.UserId,
+			FormatString: chat.FormatString,
+		}
+
+		_, err := cs.storage.CreateTelegramChatInDB(chatDb)
+		if err != nil {
+			return fmt.Errorf("failed to create telegram chat, %w", err)
+		}
+	case entities.StdoutChatType:
+		chatDB := db_actions.StdoutChat{
+			UserId:       chat.UserId,
+			FormatString: chat.FormatString,
+		}
+
+		_, err := cs.storage.CreateStdoutChatInDB(chatDB)
+		if err != nil {
+			return fmt.Errorf("failed to create stdout chat, %w", err)
+		}
 	}
+
 	return nil
 }

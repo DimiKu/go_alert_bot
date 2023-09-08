@@ -1,17 +1,22 @@
+//go:generate mockgen -source service.go -destination service_mock.go -package channels
 package channels
 
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"go_alert_bot/internal"
-	"go_alert_bot/internal/db_operations"
+	"go_alert_bot/internal/db_actions"
+	"go_alert_bot/internal/entities"
 	"go_alert_bot/pkg/link_gen"
 )
 
 type ChannelRepo interface {
-	CreateChannel(channel db_operations.ChannelDb) (link_gen.ChannelLink, error)
-	IsExistChannel(channel db_operations.ChannelDb) bool
+	CreateTelegramChannel(channel db_actions.ChannelDb) error
+	IsExistChannel(channel db_actions.ChannelDb) bool
+	CreateStdoutChannel(channel db_actions.ChannelDb) error
 }
 
 type ChannelService struct {
@@ -22,21 +27,42 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 	return &ChannelService{storage: storage}
 }
 
-func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (link_gen.ChannelLink, error) {
-	channelLink := link_gen.LinkGenerate()
+// TODO Возвращать структуру канала
+func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.ChannelLinkDto, error) {
+	link := internal.ChannelLinkDto(link_gen.LinkGenerate())
 
-	link := internal.ChannelLinkDto(channelLink)
+	trimmed := strings.Trim(channel.TgChatIds, "[]")
+	stringsSlice := strings.Split(trimmed, ", ")
+	tgIds := make([]int64, len(stringsSlice))
 
-	channelDb := db_operations.ChannelDb{UserId: channel.UserId, ChatId: channel.ChatId, ChannelLink: link}
+	for i, s := range stringsSlice {
+		tgIds[i], _ = strconv.ParseInt(s, 10, 64)
+	}
+
+	channelDb := db_actions.ChannelDb{
+		UserId:       channel.UserId,
+		TgChatIds:    tgIds,
+		ChannelLink:  db_actions.ChannelLink(link),
+		ChannelType:  channel.ChatType,
+		FormatString: channel.FormatString,
+	}
+
 	if !chs.storage.IsExistChannel(channelDb) {
-
-		_, err := chs.storage.CreateChannel(channelDb)
-		if err != nil {
-			return 0, fmt.Errorf("failed to create channel")
+		switch channelDb.ChannelType {
+		case entities.TelegramChatType:
+			err := chs.storage.CreateTelegramChannel(channelDb)
+			if err != nil {
+				return 0, fmt.Errorf("failed to create channel")
+			}
+		case entities.StdoutChatType:
+			err := chs.storage.CreateStdoutChannel(channelDb)
+			if err != nil {
+				return 0, fmt.Errorf("failed to create channel")
+			}
 		}
-		return channelLink, nil
+		return link, nil
+
 	} else {
 		return 0, errors.New("channel already exist")
 	}
-	return 0, nil
 }

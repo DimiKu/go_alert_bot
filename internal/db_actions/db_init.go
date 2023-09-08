@@ -1,15 +1,16 @@
-package db_operations
+package db_actions
 
 import (
 	"database/sql"
 	"fmt"
+
 	_ "github.com/lib/pq"
 )
 
 // TODO не забыть потом изменть. Плохая практирка
 const (
 	host     = "localhost"
-	port     = 5434
+	port     = 5436
 	user     = "postgres"
 	password = "postgres"
 )
@@ -72,40 +73,63 @@ func NewStorage(connString string) *Storage {
 	}
 }
 
-func (s *Storage) CreateDatabase() sql.Result {
-	result, err := s.conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
+func (s *Storage) CreateDatabase() error {
+	_, err := s.conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
 	if err != nil {
 		fmt.Errorf("failed to create db")
 	}
-	s.CreateUserTable()
-	s.CreateChatTable()
-	s.CreateChannelTable()
-	return result
-}
 
-func (s *Storage) CreateUserTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE users (user_id integer PRIMARY KEY, chat_id integer)`)
-	if err != nil {
-		fmt.Print("Error create table %s", err)
+	if err := s.CreateUserTable(); err != nil {
+		return err
 	}
 
-	return resp
-}
-
-func (s *Storage) CreateChannelTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE channels (user_id integer PRIMARY KEY, chat_id bigint, channel_link bigint)`)
-	if err != nil {
-		fmt.Print("Error create table %s", err)
+	if err := s.CreateTelegramChatTable(); err != nil {
+		return err
 	}
 
-	return resp
-}
-
-func (s *Storage) CreateChatTable() sql.Result {
-	resp, err := s.conn.Exec(`CREATE TABLE chats (user_id integer PRIMARY KEY, chat_id integer)`)
-	if err != nil {
-		fmt.Print("Error create table %s", err)
+	if err := s.CreateStdoutChatTable(); err != nil {
+		return err
 	}
 
-	return resp
+	if err := s.CreateChannelTable(); err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (s *Storage) CreateUserTable() error {
+	_, err := s.conn.Exec(createUsersTable)
+	if err != nil {
+		return fmt.Errorf("error create table %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) CreateChannelTable() error {
+	_, err := s.conn.Exec(createChannelsTable)
+	if err != nil {
+		return fmt.Errorf("error create table, %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) CreateTelegramChatTable() error {
+	_, err := s.conn.Exec(createTelegramChatsTable)
+	if err != nil {
+		return fmt.Errorf("error create table, %w", err)
+	}
+
+	return err
+}
+
+func (s *Storage) CreateStdoutChatTable() error {
+	_, err := s.conn.Exec(createSdtoutChatsTable)
+	if err != nil {
+		return fmt.Errorf("error create table, %w", err)
+	}
+
+	return nil
 }

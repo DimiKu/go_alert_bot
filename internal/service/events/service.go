@@ -2,23 +2,28 @@ package events
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"go_alert_bot/internal"
-	"go_alert_bot/internal/entities"
-	"go_alert_bot/pkg"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
+
+	"go_alert_bot/internal"
+	"go_alert_bot/internal/db_actions"
+	"go_alert_bot/internal/entities"
 )
 
+var ErrChannelNotFound = errors.New("channel not exist")
+
 type EventRepo interface {
-	GetChatsFromChannelLink(link entities.ChannelLink) int64
+	GetChannelFromChannelLink(link entities.ChannelLink) *db_actions.ChannelDb
+	IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
+	GetTelegramChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
+	GetStdoutChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
 }
 
-var EventMap = make(map[entities.ChannelLink]EventChan, 10) // TODO мапы перенести в поля
-var EventMapCounter = make(map[Event]int, 10)               // TODO посмотреть sync.map, либо посмотреть использование мапы в горутинах конкурент ацес го
-var TgClient = pkg.New(entities.TgToken)                    // TODO инициализировать в мейне, добавить как поле структуры типа
+type SendEventRepo interface {
+	Send(event Event, channel *db_actions.ChannelDb, counter int)
+}
 
 type Event struct {
 	Key    string `json:"key"`
@@ -27,13 +32,18 @@ type Event struct {
 }
 
 type EventService struct {
-	storage EventRepo
+	storage         EventRepo
+	eventMap        *EventChanStorage
+	eventCounterMap *EventCounters
+	SendEventRepos  map[string]SendEventRepo
 }
 
 type EventChan chan Event
 
-func NewEventService(storage EventRepo) *EventService {
-	return &EventService{storage: storage}
+func NewEventService(storage EventRepo, clientsList map[string]SendEventRepo) *EventService {
+	eventMap := NewEventChanStorage()
+	eventCounter := NewEventCounters()
+	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepos: clientsList}
 
 }
 
@@ -42,69 +52,85 @@ func (es *EventService) CreateNewChannel() EventChan {
 	return eventChannel
 }
 
-func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDto internal.ChannelLinkDto) string {
+func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDto internal.ChannelLinkDto) (string, error) {
 	var channelLinkToChannel entities.ChannelLink
 	var eventToChannel Event
-
+	if !es.storage.IsExistChannelByChannelLink(channelLinkDto) {
+		return "", ErrChannelNotFound
+	}
 	channelLinkToChannel = entities.ChannelLink(channelLinkDto)
 	eventToChannel = Event{Key: event.Key, UserId: event.UserId, link: channelLinkToChannel}
 
-	_, ok := EventMap[channelLinkToChannel]
+	eventChan, ok := es.eventMap.Load(channelLinkToChannel)
 	if !ok {
-		EventMap[channelLinkToChannel] = es.CreateNewChannel()
+		eventChan = es.eventMap.Store(channelLinkToChannel, es.CreateNewChannel())
 	}
-	EventMap[channelLinkToChannel] <- eventToChannel
+	eventChan <- eventToChannel
 
-	return "Event added"
+	return "Event added", nil
 }
 
-func (es *EventService) SendEvent(event Event, counter int, link entities.ChannelLink, client *pkg.Client) {
-	// fmt.Printf("\nEvent  %s was %d times sended to link %s", event.Key, counter, link)
-	chatId := es.storage.GetChatsFromChannelLink(link)
-	counterStr := strconv.Itoa(counter)
-	msg := strings.Join([]string{"Event", event.Key, " was ", counterStr, " times"}, " ")
-	client.SendMessage(msg, chatId)
+func (es *EventService) Send(event Event, channel *db_actions.ChannelDb, counter int) {
+	client := es.SendEventRepos[channel.ChannelType]
+	client.Send(event, channel, counter)
 }
 
-func (es *EventService) CheckEventsInChan(ctx context.Context) {
+func (es *EventService) CheckEventsInChan(ctx context.Context) error {
 
-	for link, channel := range EventMap {
+	for link, channel := range es.eventMap.GetMap() {
 		fmt.Println(link, channel)
 		for {
 			select {
 			case <-ctx.Done():
 				fmt.Println("Service is stopped")
-				break
+				return nil
 			case eventFromChannel := <-channel:
-				_, ok := EventMapCounter[eventFromChannel]
+				eventCount, ok := es.eventCounterMap.Load(eventFromChannel)
 				if !ok {
-					EventMapCounter[eventFromChannel] = 0
+					es.eventCounterMap.Store(eventFromChannel, 0)
 				}
-				EventMapCounter[eventFromChannel] += 1
-
+				es.eventCounterMap.Store(eventFromChannel, eventCount+1)
 			}
 		}
-
 	}
+	return nil
 }
 
-func (es *EventService) SendMessagesFromMap(ctx context.Context, client *pkg.Client, wg *sync.WaitGroup) error {
-	//ticker := time.NewTicker(10 * time.Second)
+func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 	timer := time.NewTimer(10 * time.Second)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-timer.C:
-			for event := range EventMapCounter {
-				es.SendEvent(event, EventMapCounter[event], event.link, client)
-				delete(EventMapCounter, event)
+			for event := range es.eventCounterMap.GetMap() {
+				eventCount, _ := es.eventCounterMap.Load(event)
 
+				channel := es.storage.GetChannelFromChannelLink(event.link)
+
+				var err error
+
+				if channel != nil {
+					switch channel.ChannelType {
+					case entities.TelegramChatType:
+						channel, err = es.storage.GetTelegramChannelByChannelLink(channel)
+						if err != nil {
+							return err
+						}
+					case entities.StdoutChatType:
+						channel, err = es.storage.GetStdoutChannelByChannelLink(channel)
+						if err != nil {
+							return err
+						}
+					}
+				}
+				es.Send(event, channel, eventCount)
+				es.eventCounterMap.DeleteKey(event)
 			}
-			//ticker.Reset(10 * time.Second)
+
 			return nil
 		}
-
 	}
 }
 
@@ -114,14 +140,21 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 	for {
 		select {
 		case <-ctx.Done():
+			// TODO не очень понятны вайтгруппы, как их засинкать
 			return nil
-		case <-ticker.C: // TODO вызывать функцию с логикой тикера
-			es.CheckEventsInChan(ctx)
-
+		case <-ticker.C:
+			if err := es.CheckEventsInChan(ctx); err != nil {
+				return err
+			}
+			// TODO подумать чтобы отправлялось после ctx.Done
 			ticker.Reset(5 * time.Second)
-			go es.SendMessagesFromMap(ctx, TgClient, wg)
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				if err := es.SendMessagesFromMap(ctx); err != nil {
+					fmt.Errorf("error, %w", err)
+				}
+			}(wg)
 		}
-
 	}
-
 }
