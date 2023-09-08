@@ -3,9 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"go_alert_bot/internal"
 	"go_alert_bot/internal/service/channels"
-	"net/http"
 )
 
 func NewChannelHandleFunc(service *channels.ChannelService) func(http.ResponseWriter, *http.Request) {
@@ -19,11 +20,13 @@ func NewChannelHandleFunc(service *channels.ChannelService) func(http.ResponseWr
 			if err != nil {
 				fmt.Fprintf(w, "err %s", err)
 			}
-			channelLink, err := service.CreateChannel(channel)
+			// TODO возвращать структуру пользователю
+			// TODO добавить валидацию у самой дтошки и возвращать из нее ошибку
+			channel, err := service.CreateChannel(channel)
 			if err != nil {
 				fmt.Fprintf(w, "err %s", err)
 			} else {
-				fmt.Fprintf(w, "your chanellink is %d", channelLink)
+				fmt.Fprintf(w, "your chanellink is %d", channel)
 			}
 		}
 

@@ -6,8 +6,8 @@ type ChannelDto struct {
 	UserId       int    `json:"user_id"`
 	TgChatIds    string `json:"telegram_chat_id"`
 	FormatString string `json:"format_string"`
-	ChannelLink  ChannelLinkDto
-	ChatType     string `json:"channel_type"`
+	//ChannelLink  ChannelLinkDto
+	ChatType string `json:"channel_type"`
 }
 
 type ChatDto struct {

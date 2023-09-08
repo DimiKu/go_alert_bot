@@ -96,7 +96,7 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) error {
 	return nil
 }
 
-func (es *EventService) SendMessagesFromMap(ctx context.Context, wg *sync.WaitGroup) error {
+func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 	timer := time.NewTimer(10 * time.Second)
 
 	for {
@@ -127,7 +127,6 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context, wg *sync.WaitGr
 				}
 				es.Send(event, channel, eventCount)
 				es.eventCounterMap.DeleteKey(event)
-				wg.Done()
 			}
 
 			return nil
@@ -149,8 +148,13 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 			}
 			// TODO подумать чтобы отправлялось после ctx.Done
 			ticker.Reset(5 * time.Second)
-			go es.SendMessagesFromMap(ctx, wg)
-			// wg.Wait()
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				if err := es.SendMessagesFromMap(ctx); err != nil {
+					fmt.Errorf("error, %w", err)
+				}
+			}(wg)
 		}
 	}
 }

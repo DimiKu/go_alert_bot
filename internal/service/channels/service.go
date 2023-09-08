@@ -4,12 +4,13 @@ package channels
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"go_alert_bot/internal"
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
 	"go_alert_bot/pkg/link_gen"
-	"strconv"
-	"strings"
 )
 
 type ChannelRepo interface {
@@ -26,6 +27,7 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 	return &ChannelService{storage: storage}
 }
 
+// TODO Возвращать структуру канала
 func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.ChannelLinkDto, error) {
 	link := internal.ChannelLinkDto(link_gen.LinkGenerate())
 

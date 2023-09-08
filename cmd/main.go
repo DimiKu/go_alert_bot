@@ -27,9 +27,6 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	clientsList := map[string]events.SendEventRepo{
 		"telegram": clients.NewTelegramClient(TgToken),
 		"stdout":   clients.NewStdoutClient(),
@@ -46,15 +43,21 @@ func main() {
 	router.HandleFunc("/create_chat", handlers.NewChatHandleFunc(chatService))
 	router.HandleFunc("/create_channel", handlers.NewChannelHandleFunc(channelService))
 
-	go func() {
-		err := eventService.RunCheckEventChannel(ctx, &wg)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		err := eventService.RunCheckEventChannel(ctx, wg)
 		if err != nil {
 			fmt.Printf("error %w", err)
 		}
-	}()
+	}(&wg)
+
 	// TODO обработка сигналов
 	if err := http.ListenAndServe(":8081", router); err != nil {
 		fmt.Errorf("error is, %w", err)
 		cancel()
+		wg.Wait()
 	}
 }

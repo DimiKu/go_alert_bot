@@ -1,8 +1,9 @@
 package channels
 
 import (
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 
 	"go_alert_bot/internal"
 )
@@ -17,6 +18,16 @@ func TestChannelService_CreateChannel(t *testing.T) {
 
 	newStorage := fields{storage: NewMockChannelRepo(gomock.NewController(t))}
 
+	expectedChannelLinkId := internal.ChannelLinkDto(7969375211542538373)
+
+	agrs := args{channel: internal.ChannelDto{
+		UserId:       1,
+		TgChatIds:    "1111",
+		FormatString: "test format",
+		ChatType:     "telegram",
+		ChannelLink:  expectedChannelLinkId,
+	}}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -25,9 +36,12 @@ func TestChannelService_CreateChannel(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		// TODO переписать тесты с вовзратом канала
 		{
 			name:    "first test",
 			fields:  newStorage,
+			args:    agrs,
+			want:    expectedChannelLinkId,
 			wantErr: false,
 		},
 	}
