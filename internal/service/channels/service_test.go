@@ -25,7 +25,6 @@ func TestChannelService_CreateChannel(t *testing.T) {
 		TgChatIds:    "1111",
 		FormatString: "test format",
 		ChatType:     "telegram",
-		ChannelLink:  expectedChannelLinkId,
 	}}
 
 	tests := []struct {
