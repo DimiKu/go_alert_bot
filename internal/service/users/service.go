@@ -2,9 +2,9 @@ package users
 
 import (
 	"fmt"
-	"go_alert_bot/internal"
 	"go_alert_bot/internal/custom_errors"
 	"go_alert_bot/internal/db_actions"
+	"go_alert_bot/internal/service/dto"
 )
 
 type UserRepo interface {
@@ -20,7 +20,7 @@ func NewUserService(storage UserRepo) *UserService {
 	return &UserService{storage: storage}
 }
 
-func (us *UserService) CreateUser(user internal.UserDto) (int, error) {
+func (us *UserService) CreateUser(user dto.UserDto) (int, error) {
 	userDb := db_actions.UserDb{UserID: user.UserId, ChatId: user.ChatId}
 
 	if us.storage.CheckIfExistUser(userDb) {

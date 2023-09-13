@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go_alert_bot/internal/service/dto"
 	"sync"
 	"time"
 
-	"go_alert_bot/internal"
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
 )
@@ -16,7 +16,7 @@ var ErrChannelNotFound = errors.New("channel not exist")
 
 type EventRepo interface {
 	GetChannelFromChannelLink(link entities.ChannelLink) *db_actions.ChannelDb
-	IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool
+	IsExistChannelByChannelLink(link dto.ChannelLinkDto) bool
 	GetTelegramChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
 	GetStdoutChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
 }
@@ -52,7 +52,7 @@ func (es *EventService) CreateNewChannel() EventChan {
 	return eventChannel
 }
 
-func (es *EventService) AddEventInChannel(event internal.EventDto, channelLinkDto internal.ChannelLinkDto) (string, error) {
+func (es *EventService) AddEventInChannel(event dto.EventDto, channelLinkDto dto.ChannelLinkDto) (string, error) {
 	var channelLinkToChannel entities.ChannelLink
 	var eventToChannel Event
 	if !es.storage.IsExistChannelByChannelLink(channelLinkDto) {
@@ -140,7 +140,6 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 	for {
 		select {
 		case <-ctx.Done():
-			// TODO не очень понятны вайтгруппы, как их засинкать
 			return nil
 		case <-ticker.C:
 			if err := es.CheckEventsInChan(ctx); err != nil {

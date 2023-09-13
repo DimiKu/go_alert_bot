@@ -2,10 +2,10 @@ package chats
 
 import (
 	"fmt"
+	"go_alert_bot/internal/service/dto"
 	"strconv"
 	"strings"
 
-	"go_alert_bot/internal"
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
 )
@@ -23,7 +23,7 @@ func NewChatService(storage ChatRepo) *ChatService {
 	return &ChatService{storage: storage}
 }
 
-func (cs *ChatService) CreateChat(chat internal.ChatDto) error {
+func (cs *ChatService) CreateChat(chat dto.ChatDto) error {
 	switch chat.ChatType {
 	case entities.TelegramChatType:
 		trimmed := strings.Trim(chat.TgChatId, "[]")

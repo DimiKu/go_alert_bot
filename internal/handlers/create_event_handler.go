@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go_alert_bot/internal/service/dto"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 
-	"go_alert_bot/internal"
 	"go_alert_bot/internal/service/events"
 )
 
@@ -24,8 +24,8 @@ func CreateEventInChannelHandler(service *events.EventService) func(w http.Respo
 		if err != nil {
 			fmt.Errorf("Failed to parse channel link")
 		}
-		ChannelLinkDto := internal.ChannelLinkDto(cnannelLinkInInt)
-		var event internal.EventDto
+		ChannelLinkDto := dto.ChannelLinkDto(cnannelLinkInInt)
+		var event dto.EventDto
 		if r.Method == http.MethodPost {
 			err := json.NewDecoder(r.Body).Decode(&event)
 			if err != nil {

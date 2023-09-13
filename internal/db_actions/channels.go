@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"go_alert_bot/internal"
+	"go_alert_bot/internal/service/dto"
 )
 
 type ChannelLink int64
@@ -65,7 +65,7 @@ func (s *Storage) IsExistChannel(channel ChannelDb) bool {
 	return true
 }
 
-func (s *Storage) IsExistChannelByChannelLink(link internal.ChannelLinkDto) bool {
+func (s *Storage) IsExistChannelByChannelLink(link dto.ChannelLinkDto) bool {
 	var channelTest ChannelDb
 
 	row, err := s.conn.Query(selectChannelByChannelLink, link)

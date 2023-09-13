@@ -3,9 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"go_alert_bot/internal/service/dto"
 	"net/http"
 
-	"go_alert_bot/internal"
 	"go_alert_bot/internal/service/chats"
 )
 
@@ -16,7 +16,7 @@ func NewChatHandleFunc(service *chats.ChatService) func(http.ResponseWriter, *ht
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == http.MethodPost {
-			var chat internal.ChatDto
+			var chat dto.ChatDto
 
 			err := json.NewDecoder(r.Body).Decode(&chat)
 			if err != nil {
