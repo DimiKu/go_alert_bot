@@ -5,9 +5,6 @@ import (
 	"go_alert_bot/internal/entities"
 )
 
-// GetChannelFromChannelLink получать отдельно линк, по нему находить чат в отдельной функции
-// switch должен быть в сервисе
-// TODO сделал не получение линка, а дополнение канала в сервисе
 func (s *Storage) GetChannelFromChannelLink(link entities.ChannelLink) *ChannelDb {
 	var existChannel ChannelDb
 

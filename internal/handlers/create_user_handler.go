@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"go_alert_bot/internal"
+	"go_alert_bot/internal/service/dto"
 	"go_alert_bot/internal/service/users"
 	"net/http"
 )
@@ -12,7 +12,7 @@ func NewUserHandleFunc(service *users.UserService) func(http.ResponseWriter, *ht
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == http.MethodPost {
-			var user internal.UserDto
+			var user dto.UserDto
 
 			err := json.NewDecoder(r.Body).Decode(&user)
 			if err != nil {

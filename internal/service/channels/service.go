@@ -4,12 +4,10 @@ package channels
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
-
-	"go_alert_bot/internal"
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
+	"go_alert_bot/internal/service/dto"
+	"go_alert_bot/pkg"
 	"go_alert_bot/pkg/link_gen"
 )
 
@@ -27,16 +25,12 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 	return &ChannelService{storage: storage}
 }
 
-// TODO Возвращать структуру канала
-func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.ChannelLinkDto, error) {
-	link := internal.ChannelLinkDto(link_gen.LinkGenerate())
+func (chs *ChannelService) CreateChannel(channel dto.ChannelDto) (*dto.ChannelDto, error) {
+	link := dto.ChannelLinkDto(link_gen.LinkGenerate())
 
-	trimmed := strings.Trim(channel.TgChatIds, "[]")
-	stringsSlice := strings.Split(trimmed, ", ")
-	tgIds := make([]int64, len(stringsSlice))
-
-	for i, s := range stringsSlice {
-		tgIds[i], _ = strconv.ParseInt(s, 10, 64)
+	tgIds, err := pkg.ConvertStrToInt64Slice(channel.TgChatIds)
+	if err != nil {
+		return nil, err
 	}
 
 	channelDb := db_actions.ChannelDb{
@@ -52,17 +46,19 @@ func (chs *ChannelService) CreateChannel(channel internal.ChannelDto) (internal.
 		case entities.TelegramChatType:
 			err := chs.storage.CreateTelegramChannel(channelDb)
 			if err != nil {
-				return 0, fmt.Errorf("failed to create channel")
+				return nil, fmt.Errorf("failed to create channel")
 			}
 		case entities.StdoutChatType:
 			err := chs.storage.CreateStdoutChannel(channelDb)
 			if err != nil {
-				return 0, fmt.Errorf("failed to create channel")
+				return nil, fmt.Errorf("failed to create channel")
 			}
 		}
-		return link, nil
+
+		channel.ChannelLink = link
+		return &channel, nil
 
 	} else {
-		return 0, errors.New("channel already exist")
+		return nil, errors.New("channel already exist")
 	}
 }
