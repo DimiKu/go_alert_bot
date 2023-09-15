@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go_alert_bot/internal/service/dto"
+	"go_alert_bot/pkg/link_gen"
 	"io"
 	"net/http"
 
@@ -24,6 +25,10 @@ func NewChannelHandleFunc(service *channels.ChannelService) func(http.ResponseWr
 				fmt.Fprintf(w, "err %s. Channel was\n", err)
 				encode(w, channel.TgChatIds)
 			} else {
+
+				link := dto.ChannelLinkDto(link_gen.LinkGenerate())
+				channel.ChannelLink = link
+
 				responseChannel, err := service.CreateChannel(channel)
 				if err != nil {
 					fmt.Fprintf(w, "err, %w", err)

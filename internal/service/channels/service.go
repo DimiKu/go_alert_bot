@@ -8,7 +8,6 @@ import (
 	"go_alert_bot/internal/entities"
 	"go_alert_bot/internal/service/dto"
 	"go_alert_bot/pkg"
-	"go_alert_bot/pkg/link_gen"
 )
 
 type ChannelRepo interface {
@@ -26,7 +25,6 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 }
 
 func (chs *ChannelService) CreateChannel(channel dto.ChannelDto) (*dto.ChannelDto, error) {
-	link := dto.ChannelLinkDto(link_gen.LinkGenerate())
 
 	tgIds, err := pkg.ConvertStrToInt64Slice(channel.TgChatIds)
 	if err != nil {
@@ -36,7 +34,7 @@ func (chs *ChannelService) CreateChannel(channel dto.ChannelDto) (*dto.ChannelDt
 	channelDb := db_actions.ChannelDb{
 		UserId:       channel.UserId,
 		TgChatIds:    tgIds,
-		ChannelLink:  db_actions.ChannelLink(link),
+		ChannelLink:  db_actions.ChannelLink(channel.ChannelLink),
 		ChannelType:  channel.ChatType,
 		FormatString: channel.FormatString,
 	}
@@ -55,7 +53,6 @@ func (chs *ChannelService) CreateChannel(channel dto.ChannelDto) (*dto.ChannelDt
 			}
 		}
 
-		channel.ChannelLink = link
 		return &channel, nil
 
 	} else {
