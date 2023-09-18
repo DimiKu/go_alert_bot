@@ -16,7 +16,9 @@ func NewStdoutClient() *StdoutClient {
 	return &StdoutClient{formatString: formatString}
 }
 
-func (s *StdoutClient) Send(event events.Event, channel *db_actions.ChannelDb, counter int) {
+func (s *StdoutClient) Send(event events.Event, channel *db_actions.ChannelDb, counter int) error {
 	returnedString := s.formatString + channel.FormatString
 	fmt.Printf(returnedString, event.Key, counter)
+
+	return nil
 }

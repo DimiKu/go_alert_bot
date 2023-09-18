@@ -1,3 +1,4 @@
+//go:generate mockgen -source service.go -destination service_mock.go -package events
 package events
 
 import (
@@ -5,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"go_alert_bot/internal/service/dto"
+	"go_alert_bot/pkg"
 	"sync"
 	"time"
 
@@ -22,7 +24,7 @@ type EventRepo interface {
 }
 
 type SendEventRepo interface {
-	Send(event Event, channel *db_actions.ChannelDb, counter int)
+	Send(event Event, channel *db_actions.ChannelDb, counter int) error
 }
 
 type Event struct {
@@ -33,16 +35,16 @@ type Event struct {
 
 type EventService struct {
 	storage         EventRepo
-	eventMap        *EventChanStorage
-	eventCounterMap *EventCounters
+	eventMap        *pkg.StorageMap
+	eventCounterMap *pkg.CounterMap
 	SendEventRepos  map[string]SendEventRepo
 }
 
 type EventChan chan Event
 
 func NewEventService(storage EventRepo, clientsList map[string]SendEventRepo) *EventService {
-	eventMap := NewEventChanStorage()
-	eventCounter := NewEventCounters()
+	eventMap := pkg.NewStorageMap()
+	eventCounter := pkg.NewCounterMap()
 	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepos: clientsList}
 
 }
@@ -76,7 +78,6 @@ func (es *EventService) Send(event Event, channel *db_actions.ChannelDb, counter
 }
 
 func (es *EventService) CheckEventsInChan(ctx context.Context) error {
-
 	for link, channel := range es.eventMap.GetMap() {
 		fmt.Println(link, channel)
 		for {
