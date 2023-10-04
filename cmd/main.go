@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/gorilla/mux"
 
@@ -19,6 +22,9 @@ import (
 
 func main() {
 	db := db_actions.NewDBAdminManage()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	storage := db_actions.NewStorage(db.DBCreate("alertsbot"))
 	if err := storage.CreateDatabase(); err != nil {
@@ -54,10 +60,19 @@ func main() {
 		}
 	}(&wg)
 
-	// TODO обработка сигналов
+	//wg.Add(1)
+	//go func() {
+	//	defer wg.Done()
+	//
+	//	signal := <-sigChan
+	//	fmt.Println(signal)
+	//	wg.Wait()
+	//}()
+
 	if err := http.ListenAndServe(":8081", router); err != nil {
 		fmt.Errorf("error is, %w", err)
 		cancel()
 		wg.Wait()
 	}
+
 }

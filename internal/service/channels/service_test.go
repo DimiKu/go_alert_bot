@@ -87,7 +87,7 @@ func TestChannelService_CreateChannel2(t *testing.T) {
 		FormatString: testChannelDto.FormatString,
 	}
 
-	var wantErr bool = false
+	var wantErr = false
 	want := &testChannelDto
 
 	mockCtrl := gomock.NewController(t)

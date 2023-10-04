@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"go_alert_bot/internal/service/dto"
-	"go_alert_bot/pkg"
 	"sync"
 	"time"
 
@@ -18,7 +17,7 @@ var ErrChannelNotFound = errors.New("channel not exist")
 
 type EventRepo interface {
 	GetChannelFromChannelLink(link entities.ChannelLink) *db_actions.ChannelDb
-	IsExistChannelByChannelLink(link dto.ChannelLinkDto) bool
+	IsExistChannelByChannelLink(link db_actions.ChannelLink) bool
 	GetTelegramChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
 	GetStdoutChannelByChannelLink(channel *db_actions.ChannelDb) (*db_actions.ChannelDb, error)
 }
@@ -35,16 +34,16 @@ type Event struct {
 
 type EventService struct {
 	storage         EventRepo
-	eventMap        *pkg.StorageMap
-	eventCounterMap *pkg.CounterMap
+	eventMap        *StorageMap
+	eventCounterMap *CounterMap
 	SendEventRepos  map[string]SendEventRepo
 }
 
 type EventChan chan Event
 
 func NewEventService(storage EventRepo, clientsList map[string]SendEventRepo) *EventService {
-	eventMap := pkg.NewStorageMap()
-	eventCounter := pkg.NewCounterMap()
+	eventMap := NewStorageMap()
+	eventCounter := NewCounterMap()
 	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepos: clientsList}
 
 }
@@ -57,7 +56,8 @@ func (es *EventService) CreateNewChannel() EventChan {
 func (es *EventService) AddEventInChannel(event dto.EventDto, channelLinkDto dto.ChannelLinkDto) (string, error) {
 	var channelLinkToChannel entities.ChannelLink
 	var eventToChannel Event
-	if !es.storage.IsExistChannelByChannelLink(channelLinkDto) {
+
+	if !es.storage.IsExistChannelByChannelLink(db_actions.ChannelLink(channelLinkDto)) {
 		return "", ErrChannelNotFound
 	}
 	channelLinkToChannel = entities.ChannelLink(channelLinkDto)
@@ -146,7 +146,6 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 			if err := es.CheckEventsInChan(ctx); err != nil {
 				return err
 			}
-			// TODO подумать чтобы отправлялось после ctx.Done
 			ticker.Reset(5 * time.Second)
 			wg.Add(1)
 			go func(wg *sync.WaitGroup) {
