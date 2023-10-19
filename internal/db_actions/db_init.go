@@ -126,7 +126,7 @@ func (s *Storage) CreateTelegramChatTable() error {
 }
 
 func (s *Storage) CreateStdoutChatTable() error {
-	_, err := s.conn.Exec(createSdtoutChatsTable)
+	_, err := s.conn.Exec(createStdoutChatsTable)
 	if err != nil {
 		return fmt.Errorf("error create table, %w", err)
 	}

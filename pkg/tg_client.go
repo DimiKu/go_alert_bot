@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"fmt"
+	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -13,7 +13,7 @@ type TelegramClient struct {
 func New(apiKey string) *TelegramClient {
 	bot, err := tgbotapi.NewBotAPI(apiKey)
 	if err != nil {
-		fmt.Errorf("failed to create client")
+		log.Printf("failed to create client")
 	}
 
 	return &TelegramClient{

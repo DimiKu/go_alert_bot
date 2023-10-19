@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"log"
 )
 
 type ChannelLink int64
@@ -51,7 +52,10 @@ func (s *Storage) IsExistChannel(channel ChannelDb) bool {
 	var channelTest ChannelDb
 
 	row, _ := s.conn.Query(isExistChannelByChannelLink, channel.ChannelLink)
-	row.Scan(&channelTest)
+	err := row.Scan(&channelTest)
+	if err != nil {
+		log.Printf("can't scan, %w", err)
+	}
 
 	if channelTest.ChannelLink == 0 {
 		return false
@@ -107,4 +111,33 @@ func (s *Storage) createStdoutChannelInDB(channel ChannelDb, chatUuid *ChatUUID)
 		}
 	}
 	return nil
+}
+
+func (s *Storage) GetChannelByChannelLink(link *ChannelLink) (*ChannelDb, error) {
+	if link != nil {
+		row, err := s.conn.Query(selectChannelByChannelLink, link)
+		if err != nil {
+			fmt.Errorf("failed to select from channels, %w", err)
+		}
+
+		var channel ChannelDb
+
+		for row.Next() {
+			if err := row.Scan(&channel.UserId, &channel.ChatUUID, &channel.ChannelType, &channel.ChannelLink); err != nil {
+				return nil, fmt.Errorf("failed to scan, %w", err)
+			}
+		}
+
+		if channel.ChannelLink == 0 {
+			return nil, nil
+		}
+
+		for row.Next() {
+			row.Scan(&channel)
+		}
+
+		return &channel, nil
+	}
+
+	return nil, fmt.Errorf("link is epmty")
 }

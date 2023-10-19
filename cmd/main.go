@@ -46,7 +46,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/event/{channelLink}", handlers.CreateEventInChannelHandler(eventService))
 	router.HandleFunc("/create_user", handlers.NewUserHandleFunc(userService))
-	router.HandleFunc("/create_chat", handlers.NewChatHandleFunc(chatService))
+	router.HandleFunc("/add_chat", handlers.NewAddChatHandleFunc(chatService))
 	router.HandleFunc("/create_channel", handlers.NewChannelHandleFunc(channelService))
 
 	var wg sync.WaitGroup
@@ -60,19 +60,24 @@ func main() {
 		}
 	}(&wg)
 
-	//wg.Add(1)
-	//go func() {
-	//	defer wg.Done()
-	//
-	//	signal := <-sigChan
-	//	fmt.Println(signal)
-	//	wg.Wait()
-	//}()
-
-	if err := http.ListenAndServe(":8081", router); err != nil {
-		fmt.Errorf("error is, %w", err)
-		cancel()
-		wg.Wait()
+	srv := &http.Server{
+		Addr:    "127.0.0.1:8081",
+		Handler: router,
 	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
+		shutSignal := <-sigChan
+		fmt.Println(shutSignal)
+		if err := srv.Shutdown(ctx); err != nil {
+			fmt.Printf("im finished")
+			fmt.Errorf("error is, %w", err)
+		}
+	}()
+
+	if err := srv.ListenAndServe(); err != nil {
+		cancel()
+		fmt.Errorf("error is, %w", err)
+	}
 }

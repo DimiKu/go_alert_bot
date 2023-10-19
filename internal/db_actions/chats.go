@@ -66,3 +66,7 @@ func (s *Storage) CreateStdoutChatInDB(chat StdoutChat) (*ChatUUID, error) {
 
 	return &ChatUuidFromDB, err
 }
+
+func (s *Storage) addNewChatToExistChannel(channel ChannelDb) error {
+
+}

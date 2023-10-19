@@ -16,7 +16,7 @@ const (
 							   telegram_chat_id bigint[], 
 							   format_string varchar)`
 
-	createSdtoutChatsTable = `CREATE TABLE stdout_chats 
+	createStdoutChatsTable = `CREATE TABLE stdout_chats 
 							  (chat_uuid uuid PRIMARY KEY, 
 							  user_id integer, 
 							  format_string varchar, 

@@ -20,6 +20,7 @@ func (s *Storage) GetChannelFromChannelLink(link entities.ChannelLink) *ChannelD
 	return &existChannel
 }
 
+// TODO если несколько чатов. Наверно нужно использовать слайс
 func (s *Storage) GetTelegramChannelByChannelLink(channel *ChannelDb) (*ChannelDb, error) {
 	if err := s.conn.QueryRow(selectTelegramChat,
 		channel.ChatUUID,

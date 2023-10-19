@@ -25,7 +25,6 @@ func NewChannelService(storage ChannelRepo) *ChannelService {
 }
 
 func (chs *ChannelService) CreateChannel(channel dto.ChannelDto) (*dto.ChannelDto, error) {
-
 	tgIds, err := pkg.ConvertStrToInt64Slice(channel.TgChatIds)
 	if err != nil {
 		return nil, err

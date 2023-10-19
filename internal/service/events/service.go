@@ -1,16 +1,17 @@
 //go:generate mockgen -source service.go -destination service_mock.go -package events
 package events
 
+
 import (
 	"context"
 	"errors"
 	"fmt"
-	"go_alert_bot/internal/service/dto"
 	"sync"
 	"time"
 
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
+	"go_alert_bot/internal/service/dto"
 )
 
 var ErrChannelNotFound = errors.New("channel not exist")
