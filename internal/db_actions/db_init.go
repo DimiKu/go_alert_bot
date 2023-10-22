@@ -3,6 +3,7 @@ package db_actions
 import (
 	"database/sql"
 	"fmt"
+	"go.uber.org/zap"
 
 	_ "github.com/lib/pq"
 )
@@ -22,80 +23,84 @@ type DBAdminManage struct {
 	port       int
 	DBName     string
 	ConnString string
+	l          *zap.Logger
 }
 
-func NewDBAdminManage() *DBAdminManage {
+func NewDBAdminManage(l *zap.Logger) *DBAdminManage {
 	return &DBAdminManage{
 		user:     user,
 		password: password,
 		address:  host,
 		port:     port,
+		l:        l,
 	}
 }
 
 // Drop database if there is to use every time new db
-
 func (a DBAdminManage) DBCreate(DBName string) string {
 	connString := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
 		host, port, user, password)
 	conn, err := sql.Open("postgres", connString)
+	if err != nil {
+		a.l.Error("can't connect to db", zap.Error(err))
+	}
 
 	_, err = conn.Exec(`DROP DATABASE IF EXISTS ` + DBName)
 	if err != nil {
-		fmt.Errorf("Failed to drop db")
+		a.l.Error("Failed to drop db", zap.Error(err))
 	}
 
-	_, err = conn.Exec(`CREATE DATABASE ` + DBName + ` ;`)
-	fmt.Print(DBName)
+	_, err = conn.Exec("create database " + DBName)
 	if err != nil {
-		fmt.Errorf("failed to create db")
+		a.l.Error("failed to create db", zap.Error(err), zap.String("DB name", DBName))
 	}
 
 	a.ConnString = fmt.Sprintf("host=%s port=%d user=%s password=%s database=%s sslmode=disable",
 		host, port, user, password, DBName)
 
-	fmt.Println(a.ConnString)
 	return a.ConnString
 }
 
 type Storage struct {
 	conn   *sql.DB
+	l      *zap.Logger
 	DBName string
 }
 
-func NewStorage(connString string) *Storage {
+func NewStorage(connString string, l *zap.Logger) *Storage {
 	conn, err := sql.Open("postgres", connString)
 	if err != nil {
-		fmt.Errorf("Failed to craate connection to db")
+		l.Error("Failed to create connection to db", zap.Error(err))
 	}
 	return &Storage{
 		conn: conn,
+		l:    l,
 	}
 }
 
-func (s *Storage) CreateDatabase() error {
-	_, err := s.conn.Exec(`CREATE DATABASE ` + s.DBName + ` ;`)
-	if err != nil {
-		fmt.Errorf("failed to create db")
-	}
-
+func (s *Storage) CreateBasicTables() error {
 	if err := s.CreateUserTable(); err != nil {
+		s.l.Error("can't create user table", zap.Error(err))
 		return err
 	}
 
 	if err := s.CreateTelegramChatTable(); err != nil {
+		s.l.Error("can't create tg chat table", zap.Error(err))
 		return err
 	}
 
 	if err := s.CreateStdoutChatTable(); err != nil {
+		s.l.Error("can't create stdout chat table", zap.Error(err))
+
 		return err
 	}
 
 	if err := s.CreateChannelTable(); err != nil {
+		s.l.Error("can't create channel table", zap.Error(err))
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *Storage) CreateUserTable() error {

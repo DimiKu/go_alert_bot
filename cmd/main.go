@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,14 +22,17 @@ import (
 )
 
 func main() {
-	db := db_actions.NewDBAdminManage()
+	logger, _ := zap.NewProduction()
+
+	db := db_actions.NewDBAdminManage(logger)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	storage := db_actions.NewStorage(db.DBCreate("alertsbot"))
-	if err := storage.CreateDatabase(); err != nil {
-		fmt.Errorf("failed to create db, %w", err)
+	storage := db_actions.NewStorage(db.DBCreate("alertsbot"), logger)
+
+	if err := storage.CreateBasicTables(); err != nil {
+		logger.Error("failed to create db", zap.Error(err))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -39,15 +43,15 @@ func main() {
 	}
 
 	userService := users.NewUserService(storage)
-	chatService := chats.NewChatService(storage)
+	chatService := chats.NewChatService(storage, logger)
 	channelService := channels.NewChannelService(storage)
-	eventService := events.NewEventService(storage, clientsList)
+	eventService := events.NewEventService(storage, clientsList, logger)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/event/{channelLink}", handlers.CreateEventInChannelHandler(eventService))
-	router.HandleFunc("/create_user", handlers.NewUserHandleFunc(userService))
-	router.HandleFunc("/add_chat", handlers.NewAddChatHandleFunc(chatService))
-	router.HandleFunc("/create_channel", handlers.NewChannelHandleFunc(channelService))
+	router.HandleFunc("/event/{channelLink}", handlers.CreateEventInChannelHandler(eventService, logger))
+	router.HandleFunc("/create_user", handlers.NewUserHandleFunc(userService, logger))
+	router.HandleFunc("/add_chat", handlers.NewAddChatHandleFunc(chatService, logger))
+	router.HandleFunc("/create_channel", handlers.NewChannelHandleFunc(channelService, logger))
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -56,7 +60,7 @@ func main() {
 		defer wg.Done()
 		err := eventService.RunCheckEventChannel(ctx, wg)
 		if err != nil {
-			fmt.Printf("error %w", err)
+			logger.Error("RunCheckEventChannel failed", zap.Error(err))
 		}
 	}(&wg)
 
@@ -71,13 +75,12 @@ func main() {
 		shutSignal := <-sigChan
 		fmt.Println(shutSignal)
 		if err := srv.Shutdown(ctx); err != nil {
-			fmt.Printf("im finished")
-			fmt.Errorf("error is, %w", err)
+			logger.Error("error in shutdown", zap.Error(err))
 		}
 	}()
 
 	if err := srv.ListenAndServe(); err != nil {
 		cancel()
-		fmt.Errorf("error is, %w", err)
+		logger.Info("Server is stopped")
 	}
 }

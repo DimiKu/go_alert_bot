@@ -42,7 +42,11 @@ const (
        					  format_string 
 						  FROM telegram_chats WHERE chat_uuid=$1`
 
+	updateTelegramChat = `UPDATE telegram_chats set telegram_chat_id=$1 where chat_uuid=$2`
+
 	selectFormatStringByStdoutChat = `SELECT format_string FROM stdout_chats WHERE chat_uuid=$1`
+
+	selectChatsByChatUUID = `SELECT telegram_chat_id FROM telegram_chats WHERE chat_uuid=$1`
 
 	// channels actions
 	isExistChannelByChannelLink = `SELECT user_id, chat_uuid, channel_link FROM channels where channel_link=$1`

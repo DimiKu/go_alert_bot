@@ -1,11 +1,11 @@
 //go:generate mockgen -source service.go -destination service_mock.go -package events
 package events
 
-
 import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -38,14 +38,24 @@ type EventService struct {
 	eventMap        *StorageMap
 	eventCounterMap *CounterMap
 	SendEventRepos  map[string]SendEventRepo
+	l               *zap.Logger
 }
 
 type EventChan chan Event
 
-func NewEventService(storage EventRepo, clientsList map[string]SendEventRepo) *EventService {
+func NewEventService(storage EventRepo,
+	clientsList map[string]SendEventRepo,
+	l *zap.Logger,
+) *EventService {
 	eventMap := NewStorageMap()
 	eventCounter := NewCounterMap()
-	return &EventService{storage: storage, eventMap: eventMap, eventCounterMap: eventCounter, SendEventRepos: clientsList}
+	return &EventService{
+		storage:         storage,
+		eventMap:        eventMap,
+		eventCounterMap: eventCounter,
+		SendEventRepos:  clientsList,
+		l:               l,
+	}
 
 }
 
@@ -66,6 +76,7 @@ func (es *EventService) AddEventInChannel(event dto.EventDto, channelLinkDto dto
 
 	eventChan, ok := es.eventMap.Load(channelLinkToChannel)
 	if !ok {
+		es.l.Debug("event was added", zap.String("event", event.Key))
 		eventChan = es.eventMap.Store(channelLinkToChannel, es.CreateNewChannel())
 	}
 	eventChan <- eventToChannel
@@ -75,12 +86,13 @@ func (es *EventService) AddEventInChannel(event dto.EventDto, channelLinkDto dto
 
 func (es *EventService) Send(event Event, channel *db_actions.ChannelDb, counter int) {
 	client := es.SendEventRepos[channel.ChannelType]
-	client.Send(event, channel, counter)
+	if err := client.Send(event, channel, counter); err != nil {
+		es.l.Error("can't send message", zap.Error(err))
+	}
 }
 
 func (es *EventService) CheckEventsInChan(ctx context.Context) error {
-	for link, channel := range es.eventMap.GetMap() {
-		fmt.Println(link, channel)
+	for _, channel := range es.eventMap.GetMap() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -152,7 +164,7 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
 				if err := es.SendMessagesFromMap(ctx); err != nil {
-					fmt.Errorf("error, %w", err)
+					es.l.Error("error, %w", zap.Error(err))
 				}
 			}(wg)
 		}

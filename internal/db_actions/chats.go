@@ -1,15 +1,17 @@
 package db_actions
 
 import (
+	"errors"
 	"fmt"
 	"github.com/lib/pq"
+	"go.uber.org/zap"
 
 	"github.com/google/uuid"
 )
 
 type ChatUUID string
 
-type TgChatIds []int64
+type TgChatIds pq.Int64Array
 
 type TelegramChat struct {
 	ChatUUID     string      `db:"chat_uuid"`
@@ -53,7 +55,7 @@ func (s *Storage) CreateStdoutChatInDB(chat StdoutChat) (*ChatUUID, error) {
 
 	row, err := s.conn.Query(selectChatUuid, chat.ChannelLink)
 	if err != nil {
-		fmt.Errorf("failed to get chatID after chat creating in DB, %w", err)
+		s.l.Error("failed to get chatID after chat creating in DB", zap.Error(err))
 	}
 
 	var ChatUuidFromDB ChatUUID
@@ -67,6 +69,15 @@ func (s *Storage) CreateStdoutChatInDB(chat StdoutChat) (*ChatUUID, error) {
 	return &ChatUuidFromDB, err
 }
 
-func (s *Storage) addNewChatToExistChannel(channel ChannelDb) error {
+func (s *Storage) AddNewChatToExistChannel(chat *TelegramChat, chatUUID uuid.UUID) error {
+	if chat != nil {
+		_, err := s.conn.Exec(updateTelegramChat, pq.Array(chat.TgChatIds), chatUUID)
+		if err != nil {
+			return err
+		}
 
+		return nil
+	}
+
+	return errors.New("can't update chat. Chat is empty")
 }
