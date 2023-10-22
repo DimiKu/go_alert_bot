@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"go.uber.org/zap"
 	"go_alert_bot/internal/service/dto"
 	"net/http"
 
@@ -12,7 +12,7 @@ import (
 // TODO пока чаты хочу убрать. Они не нужны, если мы регистрируем их при регистрации channel. В будущем планирую
 // TODO использовать их для расширения отправки по channel_link
 
-func NewChatHandleFunc(service *chats.ChatService) func(http.ResponseWriter, *http.Request) {
+func NewAddChatHandleFunc(service *chats.ChatService, l *zap.Logger) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == http.MethodPost {
@@ -20,11 +20,11 @@ func NewChatHandleFunc(service *chats.ChatService) func(http.ResponseWriter, *ht
 
 			err := json.NewDecoder(r.Body).Decode(&chat)
 			if err != nil {
-				fmt.Errorf("Failed to decode")
+				l.Error("Failed to decode", zap.Error(err))
 			}
 
-			if err := service.CreateChat(chat); err != nil {
-				fmt.Fprintf(w, "failed to create chat %s", err)
+			if err := service.AddChatToChannel(chat); err != nil {
+				l.Error("failed to create chat", zap.Error(err))
 			}
 		}
 	}

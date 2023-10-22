@@ -10,6 +10,7 @@ type ChatDto struct {
 	TgChatId     string `json:"telegram_chat_id"`
 	ChatType     string `json:"chat_type"`
 	FormatString string `json:"format_string"`
+	ChannelLink  int64  `json:"channel_link"`
 }
 
 func (c *ChatDto) Validate() error {

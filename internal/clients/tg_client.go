@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -26,13 +25,15 @@ func (es *TelegramClient) Send(
 	event events.Event,
 	channel *db_actions.ChannelDb,
 	counter int,
-) {
+) error {
 	// fmt.Printf("\nEvent  %s was %d times sended to link %s", event.Key, counter, link)
 	counterStr := strconv.Itoa(counter)
 	msg := strings.Join([]string{"Event", event.Key, " was ", counterStr, " times, ", channel.FormatString}, " ")
 	for _, chat := range channel.TgChatIds {
 		if err := es.tgClient.SendMessage(msg, chat); err != nil {
-			fmt.Errorf("failed to send telegram message, %w", err)
+			return err
 		}
 	}
+
+	return nil
 }

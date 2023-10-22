@@ -2,6 +2,7 @@ package db_actions
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"go_alert_bot/internal/entities"
 )
 
@@ -14,12 +15,13 @@ func (s *Storage) GetChannelFromChannelLink(link entities.ChannelLink) *ChannelD
 		&existChannel.ChannelType,
 		&existChannel.ChannelLink,
 	); err != nil {
-		fmt.Errorf("failed to scan channel, %w", err)
+		s.l.Error("failed to scan channel, %w", zap.Error(err))
 	}
 
 	return &existChannel
 }
 
+// TODO если несколько чатов. Наверно нужно использовать слайс
 func (s *Storage) GetTelegramChannelByChannelLink(channel *ChannelDb) (*ChannelDb, error) {
 	if err := s.conn.QueryRow(selectTelegramChat,
 		channel.ChatUUID,

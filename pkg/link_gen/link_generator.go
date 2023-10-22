@@ -2,13 +2,12 @@ package link_gen
 
 import (
 	"math/rand"
-	"time"
 )
 
 type ChannelLink int64
 
 func LinkGenerate() ChannelLink {
-	rand.Seed(time.Now().UnixNano())
-	return ChannelLink(rand.Int63())
+	r := rand.New(rand.NewSource(999))
+	return ChannelLink(r.Int63())
 
 }

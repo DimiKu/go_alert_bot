@@ -1,10 +1,11 @@
 package db_actions
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"go_alert_bot/internal/service/dto"
+	"go.uber.org/zap"
 )
 
 type ChannelLink int64
@@ -23,11 +24,11 @@ func (s *Storage) CreateTelegramChannel(channel ChannelDb) error {
 
 	chatUUID, err := s.CreateTelegramChatInDB(tgChat)
 	if err != nil {
-		fmt.Errorf("failed to create telegram chat in db, %w", err)
+		s.l.Error("failed to create telegram chat in db", zap.Error(err))
 	}
 
 	if err = s.createTelegramChannelInDB(channel, chatUUID); err != nil {
-		fmt.Errorf("failed to create telegram channel in db, %w", err)
+		s.l.Error("failed to create telegram channel in db", zap.Error(err))
 	}
 
 	return nil
@@ -52,30 +53,10 @@ func (s *Storage) IsExistChannel(channel ChannelDb) bool {
 	var channelTest ChannelDb
 
 	row, _ := s.conn.Query(isExistChannelByChannelLink, channel.ChannelLink)
-	row.Scan(&channelTest)
-
-	if channelTest.ChannelLink == 0 {
-		return false
-	}
-
+	err := row.Scan(&channelTest)
 	for row.Next() {
-		row.Scan(&channelTest)
-	}
-
-	return true
-}
-
-func (s *Storage) IsExistChannelByChannelLink(link dto.ChannelLinkDto) bool {
-	var channelTest ChannelDb
-
-	row, err := s.conn.Query(selectChannelByChannelLink, link)
-	if err != nil {
-		fmt.Errorf("failed to select from channels, %w", err)
-	}
-
-	for row.Next() {
-		if err := row.Scan(&channelTest.UserId, &channelTest.ChatUUID, &channelTest.ChannelType, &channelTest.ChannelLink); err != nil {
-			fmt.Errorf("failed to scan, %w", err)
+		if err != nil {
+			s.l.Error("can't scan channelTest in check", zap.Error(err))
 		}
 	}
 
@@ -84,7 +65,36 @@ func (s *Storage) IsExistChannelByChannelLink(link dto.ChannelLinkDto) bool {
 	}
 
 	for row.Next() {
-		row.Scan(&channelTest)
+		if err := row.Scan(&channelTest); err != nil {
+			s.l.Error("can't scan channelTest in check sec", zap.Error(err))
+		}
+	}
+
+	return true
+}
+
+func (s *Storage) IsExistChannelByChannelLink(link ChannelLink) bool {
+	var channelTest ChannelDb
+
+	row, err := s.conn.Query(selectChannelByChannelLink, link)
+	if err != nil {
+		s.l.Error("failed to select from channels, %w", zap.Error(err))
+	}
+
+	for row.Next() {
+		if err := row.Scan(&channelTest.UserId, &channelTest.ChatUUID, &channelTest.ChannelType, &channelTest.ChannelLink); err != nil {
+			s.l.Error("failed to scan, %w", zap.Error(err))
+		}
+	}
+
+	if channelTest.ChannelLink == 0 {
+		return false
+	}
+
+	for row.Next() {
+		if err := row.Scan(&channelTest); err != nil {
+			s.l.Error("can't scan channelTest in check by channel link", zap.Error(err))
+		}
 	}
 
 	return true
@@ -108,4 +118,55 @@ func (s *Storage) createStdoutChannelInDB(channel ChannelDb, chatUuid *ChatUUID)
 		}
 	}
 	return nil
+}
+
+func (s *Storage) GetChannelByChannelLink(link *ChannelLink) (*ChannelDb, error) {
+	if link != nil {
+		row, err := s.conn.Query(selectChannelByChannelLink, link)
+		if err != nil {
+			s.l.Error("failed to select from channels", zap.Error(err))
+		}
+
+		var channel ChannelDb
+
+		for row.Next() {
+			if err := row.Scan(&channel.UserId, &channel.ChatUUID, &channel.ChannelType, &channel.ChannelLink); err != nil {
+				return nil, fmt.Errorf("failed to scan, %w", err)
+			}
+		}
+
+		if channel.ChannelLink == 0 {
+			return nil, nil
+		}
+
+		for row.Next() {
+			if err := row.Scan(&channel); err != nil {
+				return nil, err
+			}
+		}
+
+		return &channel, nil
+	}
+
+	return nil, fmt.Errorf("link is epmty")
+}
+
+func (s *Storage) GetChatsByChatUUID(chatUUID *uuid.UUID) ([]int64, error) {
+	if chatUUID != nil {
+		var tgChats []int64
+		row, err := s.conn.Query(selectChatsByChatUUID, chatUUID.String())
+		if err != nil {
+			return nil, errors.New("failed to select chats by chatUUID")
+		}
+
+		for row.Next() {
+			if err := row.Scan(pq.Array(&tgChats)); err != nil {
+				return nil, errors.New("failed to scan chats by chatUUID")
+			}
+		}
+
+		return tgChats, nil
+	}
+
+	return nil, errors.New("can't find chat by chatUUID")
 }
