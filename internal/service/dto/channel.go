@@ -26,11 +26,15 @@ func (c *ChannelDto) Validate() error {
 		return InvalidChatType
 	}
 
-	if c.ChatType == entities.TelegramChatType {
+	if c.ChatType == entities.TelegramChatType || c.ChatType == "" {
 		_, err := pkg.ConvertStrToInt64Slice(c.TgChatIds)
 		if err != nil {
 			return InvalidChatId
 		}
+	}
+
+	if c.UserId == 0 {
+		return EmptyUserError
 	}
 
 	return nil
