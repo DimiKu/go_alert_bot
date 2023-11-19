@@ -117,7 +117,7 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			es.l.Debug("ticker gone in SendMessagesFromMap")
+			es.l.Info("ticker gone in SendMessagesFromMap")
 			for event := range es.eventCounterMap.GetMap() {
 				eventCount, _ := es.eventCounterMap.Load(event)
 
@@ -129,6 +129,7 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 					switch channel.ChannelType {
 					case entities.TelegramChatType:
 						channel, err = es.storage.GetTelegramChannelByChannelLink(channel)
+						es.l.Info("ticker gone in GetTelegramChannelByChannelLink")
 						if err != nil {
 							return err
 						}
@@ -141,13 +142,15 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 				}
 				es.Send(event, channel, eventCount)
 				es.eventCounterMap.DeleteKey(event)
+				es.l.Info("delete key", zap.String("event", event.Key))
+				ticker.Reset(10 * time.Second)
 			}
 		}
 	}
 }
 
 func (es *EventService) RunCheckEventChannel(ctx context.Context) error {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	for {
 		select {
@@ -158,9 +161,9 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context) error {
 			if err := es.CheckEventsInChan(ctx); err != nil {
 				return err
 			}
-			ticker.Reset(5 * time.Second)
+			ticker.Reset(10 * time.Second)
 			go func() {
-				es.l.Debug("ticker gone to SendMessagesFromMap")
+				es.l.Info("ticker gone to SendMessagesFromMap")
 				if err := es.SendMessagesFromMap(ctx); err != nil {
 					es.l.Error("error, %w", zap.Error(err))
 				}
