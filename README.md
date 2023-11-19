@@ -9,7 +9,7 @@
 
 Пример использования
 ```
-curl -X POST http://127.0.0.1:8081/add_chat -d '{"channel_link": 1160864311317431593, "chat_type": "telegram", "telegram_chat_id":"-1001654890472"}'
+curl -X POST http://127.0.0.1:8081/create_channel -d '{"user_id": 1, "format_string": "its test", "channel_type": "telegram", "telegram_chat_id": "-1001675234599"}'
 ```
 
 /event/<link> - ссылка для приема эвенов в формате json {"key":"value"}
