@@ -3,15 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-
 	"github.com/gorilla/mux"
-
+	"go.uber.org/zap"
 	"go_alert_bot/internal/clients"
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/handlers"
@@ -19,8 +12,30 @@ import (
 	"go_alert_bot/internal/service/chats"
 	"go_alert_bot/internal/service/events"
 	"go_alert_bot/internal/service/users"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
+// @title           Swagger Example API
+// @version         1.0
+// @description     This is a sample server celler server.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8081
+// @BasePath  /
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	logger, _ := zap.NewProduction()
 
@@ -48,27 +63,31 @@ func main() {
 	eventService := events.NewEventService(storage, clientsList, logger)
 
 	router := mux.NewRouter()
+
 	router.HandleFunc("/event/{channelLink}", handlers.CreateEventInChannelHandler(eventService, logger))
 	router.HandleFunc("/create_user", handlers.NewUserHandleFunc(userService, logger))
 	router.HandleFunc("/add_chat", handlers.NewAddChatHandleFunc(chatService, logger))
 	router.HandleFunc("/create_channel", handlers.NewChannelHandleFunc(channelService, logger))
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		err := eventService.RunCheckEventChannel(ctx, wg)
-		if err != nil {
-			logger.Error("RunCheckEventChannel failed", zap.Error(err))
-		}
-	}(&wg)
 
 	srv := &http.Server{
 		Addr:    "127.0.0.1:8081",
 		Handler: router,
 	}
+
 	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		err := eventService.RunCheckEventChannel(ctx)
+		if err != nil {
+			logger.Error("RunCheckEventChannel failed", zap.Error(err))
+		}
+	}()
+
+	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 

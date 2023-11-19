@@ -1,0 +1,214 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a sample server celler server.",
+        "title": "Swagger Example API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/add_chat": {
+            "post": {
+                "description": "Add chat to exits channel",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "parameters": [
+                    {
+                        "description": "ChatDto.go",
+                        "name": "RequestBody",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ChatDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "chat was added ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/create_channel": {
+            "post": {
+                "description": "Create channel",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channel"
+                ],
+                "parameters": [
+                    {
+                        "description": "ChannelDto.go",
+                        "name": "RequestBody",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ChannelDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "channel is ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/create_user": {
+            "post": {
+                "description": "create_user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "create_user",
+                "parameters": [
+                    {
+                        "description": "UserDto.go",
+                        "name": "RequestBody",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "your user_id is user_id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/event": {
+            "post": {
+                "description": "Create event",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "event"
+                ],
+                "parameters": [
+                    {
+                        "description": "event.go",
+                        "name": "RequestBody",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EventDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "event is ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.ChannelDto": {
+            "type": "object",
+            "properties": {
+                "channel_link": {
+                    "type": "integer"
+                },
+                "channel_type": {
+                    "type": "string"
+                },
+                "format_string": {
+                    "type": "string"
+                },
+                "telegram_chat_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ChatDto": {
+            "type": "object",
+            "properties": {
+                "channel_link": {
+                    "type": "integer"
+                },
+                "chat_type": {
+                    "type": "string"
+                },
+                "format_string": {
+                    "type": "string"
+                },
+                "telegram_chat_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.EventDto": {
+            "type": "object",
+            "properties": {
+                "channelLink": {
+                    "type": "integer"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UserDto": {
+            "type": "object",
+            "properties": {
+                "chat_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "externalDocs": {
+        "description": "OpenAPI",
+        "url": "https://swagger.io/resources/open-api/"
+    }
+}

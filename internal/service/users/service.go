@@ -10,7 +10,7 @@ import (
 
 type UserRepo interface {
 	CreateUser(user db_actions.UserDb) error
-	CheckIfExistUser(user db_actions.UserDb) bool
+	CheckIfExistUser(user int) bool
 }
 
 type UserService struct {
@@ -21,10 +21,18 @@ func NewUserService(storage UserRepo) *UserService {
 	return &UserService{storage: storage}
 }
 
+// @Tags			user
+// @Router			/create_user [post]
+// @Summary			create_user
+// @Description		create_user
+// @Param			RequestBody body internal.service.dto.UserDto true "UserDto.go"
+// @Produce			application/json
+// @Success			200 {object} user.UserDto{} "Response Success (UserDto.go)"
+
 func (us *UserService) CreateUser(user dto.UserDto) (int, error) {
 	userDb := db_actions.UserDb{UserID: user.UserId, ChatId: user.ChatId}
 
-	if us.storage.CheckIfExistUser(userDb) {
+	if us.storage.CheckIfExistUser(userDb.UserID) {
 		return user.UserId, custom_errors.UserAlreadyExist
 	}
 	err := us.storage.CreateUser(userDb)

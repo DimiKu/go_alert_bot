@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"go.uber.org/zap"
-	"sync"
 	"time"
 
 	"go_alert_bot/internal/db_actions"
@@ -28,9 +27,9 @@ type SendEventRepo interface {
 }
 
 type Event struct {
-	Key    string `json:"key"`
-	UserId int    `json:"user_id"`
-	link   entities.ChannelLink
+	Key string `json:"key"`
+	// UserId int    `json:"user_id"`
+	link entities.ChannelLink
 }
 
 type EventService struct {
@@ -72,11 +71,11 @@ func (es *EventService) AddEventInChannel(event dto.EventDto, channelLinkDto dto
 		return "", ErrChannelNotFound
 	}
 	channelLinkToChannel = entities.ChannelLink(channelLinkDto)
-	eventToChannel = Event{Key: event.Key, UserId: event.UserId, link: channelLinkToChannel}
+	eventToChannel = Event{Key: event.Key, link: channelLinkToChannel}
 
 	eventChan, ok := es.eventMap.Load(channelLinkToChannel)
 	if !ok {
-		es.l.Debug("event was added", zap.String("event", event.Key))
+		es.l.Info("event was added", zap.String("event", event.Key))
 		eventChan = es.eventMap.Store(channelLinkToChannel, es.CreateNewChannel())
 	}
 	eventChan <- eventToChannel
@@ -111,13 +110,14 @@ func (es *EventService) CheckEventsInChan(ctx context.Context) error {
 }
 
 func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
-	timer := time.NewTimer(10 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-timer.C:
+		case <-ticker.C:
+			es.l.Debug("ticker gone in SendMessagesFromMap")
 			for event := range es.eventCounterMap.GetMap() {
 				eventCount, _ := es.eventCounterMap.Load(event)
 
@@ -142,13 +142,11 @@ func (es *EventService) SendMessagesFromMap(ctx context.Context) error {
 				es.Send(event, channel, eventCount)
 				es.eventCounterMap.DeleteKey(event)
 			}
-
-			return nil
 		}
 	}
 }
 
-func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitGroup) error {
+func (es *EventService) RunCheckEventChannel(ctx context.Context) error {
 	ticker := time.NewTicker(5 * time.Second)
 
 	for {
@@ -156,17 +154,17 @@ func (es *EventService) RunCheckEventChannel(ctx context.Context, wg *sync.WaitG
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
+			es.l.Info("ticker gone to CheckEventsInChan")
 			if err := es.CheckEventsInChan(ctx); err != nil {
 				return err
 			}
 			ticker.Reset(5 * time.Second)
-			wg.Add(1)
-			go func(wg *sync.WaitGroup) {
-				defer wg.Done()
+			go func() {
+				es.l.Debug("ticker gone to SendMessagesFromMap")
 				if err := es.SendMessagesFromMap(ctx); err != nil {
 					es.l.Error("error, %w", zap.Error(err))
 				}
-			}(wg)
+			}()
 		}
 	}
 }

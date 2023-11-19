@@ -1,0 +1,139 @@
+basePath: /
+definitions:
+  dto.ChannelDto:
+    properties:
+      channel_link:
+        type: integer
+      channel_type:
+        type: string
+      format_string:
+        type: string
+      telegram_chat_id:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dto.ChatDto:
+    properties:
+      channel_link:
+        type: integer
+      chat_type:
+        type: string
+      format_string:
+        type: string
+      telegram_chat_id:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dto.EventDto:
+    properties:
+      channelLink:
+        type: integer
+      key:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dto.UserDto:
+    properties:
+      chat_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server celler server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /add_chat:
+    post:
+      description: Add chat to exits channel
+      parameters:
+      - description: ChatDto.go
+        in: body
+        name: RequestBody
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChatDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'chat was added '
+          schema:
+            type: string
+      tags:
+      - chat
+  /create_channel:
+    post:
+      description: Create channel
+      parameters:
+      - description: ChannelDto.go
+        in: body
+        name: RequestBody
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChannelDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'channel is '
+          schema:
+            type: string
+      tags:
+      - channel
+  /create_user:
+    post:
+      description: create_user
+      parameters:
+      - description: UserDto.go
+        in: body
+        name: RequestBody
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: your user_id is user_id
+          schema:
+            type: string
+      summary: create_user
+      tags:
+      - user
+  /event:
+    post:
+      description: Create event
+      parameters:
+      - description: event.go
+        in: body
+        name: RequestBody
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EventDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'event is '
+          schema:
+            type: string
+      tags:
+      - event
+swagger: "2.0"
