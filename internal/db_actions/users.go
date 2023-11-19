@@ -21,10 +21,10 @@ func (s *Storage) CreateUser(user UserDb) error {
 	return nil
 }
 
-func (s *Storage) CheckIfExistUser(user UserDb) bool {
+func (s *Storage) CheckIfExistUser(userID int) bool {
 	var checkUser UserDb
 	userExist := true
-	row := s.conn.QueryRow(isExistUserByUserId, user.UserID).Scan(&checkUser)
+	row := s.conn.QueryRow(isExistUserByUserId, userID).Scan(&checkUser)
 	if errors.Is(row, sql.ErrNoRows) {
 		userExist = false
 	}

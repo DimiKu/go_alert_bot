@@ -4,6 +4,7 @@ package channels
 import (
 	"errors"
 	"fmt"
+	"go_alert_bot/internal/custom_errors"
 	"go_alert_bot/internal/db_actions"
 	"go_alert_bot/internal/entities"
 	"go_alert_bot/internal/service/dto"
@@ -14,6 +15,7 @@ type ChannelRepo interface {
 	CreateTelegramChannel(channel db_actions.ChannelDb) error
 	IsExistChannel(channel db_actions.ChannelDb) bool
 	CreateStdoutChannel(channel db_actions.ChannelDb) error
+	CheckIfExistUser(user int) bool
 }
 
 type ChannelService struct {
@@ -28,6 +30,10 @@ func (chs *ChannelService) CreateChannel(channel dto.ChannelDto) (*dto.ChannelDt
 	tgIds, err := pkg.ConvertStrToInt64Slice(channel.TgChatIds)
 	if err != nil {
 		return nil, err
+	}
+
+	if !chs.storage.CheckIfExistUser(channel.UserId) {
+		return nil, custom_errors.UserNotExist
 	}
 
 	channelDb := db_actions.ChannelDb{
